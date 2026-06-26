@@ -3,323 +3,600 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Why AI Agents Need llm-d: The Inference Pattern Nobody Planned For</title>
+    <title>Why Agentic Workloads Are the Killer App for KV Cache-Aware Routing | llm-d Content Hub</title>
+    <meta name="description" content="A deep-dive into how llm-d's KV cache-aware routing transforms agentic AI workloads, reducing latency by up to 75% through intelligent prefix caching and sticky routing.">
+    <meta name="author" content="Markell Rawls">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700;800;900&family=Red+Hat+Text:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: #111827;
+            --border-card: #1e3a5f;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --text-primary: #e0e6f0;
+            --text-secondary: #8892a8;
+            --text-heading: #ffffff;
+            --font-display: 'Red Hat Display', sans-serif;
+            --font-body: 'Red Hat Text', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
-            background: #0a0e1a;
-            color: #e0e0e0;
-            font-family: 'Red Hat Text', sans-serif;
-            font-weight: 400;
-            line-height: 1.8;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
             font-size: 17px;
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Gradient bar at top */
         .gradient-bar {
-            height: 4px;
-            background: linear-gradient(90deg, #00d4ff, #7f52ff);
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            z-index: 100;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
+            z-index: 1001;
         }
 
-        .nav-bar {
-            max-width: 800px;
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 3px;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 14, 23, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(30, 58, 95, 0.4);
+            z-index: 1000;
+            padding: 0 2rem;
+        }
+
+        .nav-inner {
+            max-width: 900px;
             margin: 0 auto;
-            padding: 2rem 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+
+        .nav-brand {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-heading);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-brand .badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-links {
             display: flex;
             gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-blue);
+        }
+
+        .nav-links a.btn-nav {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--accent-blue);
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            transition: all 0.2s;
+        }
+
+        .nav-links a.btn-nav:hover {
+            background: rgba(59, 130, 246, 0.22);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        /* Article container */
+        article {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 120px 1.5rem 80px;
+        }
+
+        /* Article header */
+        .article-header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(30, 58, 95, 0.4);
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
             flex-wrap: wrap;
         }
 
-        .nav-bar a {
-            color: #00d4ff;
-            text-decoration: none;
-            font-family: 'Red Hat Text', sans-serif;
-            font-weight: 500;
-            font-size: 0.9rem;
-            letter-spacing: 0.02em;
-            transition: opacity 0.2s;
+        .article-meta .tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            padding: 3px 10px;
+            border-radius: 4px;
         }
 
-        .nav-bar a:hover {
-            opacity: 0.8;
-            text-decoration: underline;
+        .article-meta .date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
 
-        article {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem 4rem;
-        }
-
-        .header {
-            margin-bottom: 3rem;
-            padding-top: 1rem;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 2rem;
-        }
-
-        .header-brand img {
-            width: 40px;
-            height: 40px;
-        }
-
-        .header-brand span {
-            font-family: 'Red Hat Display', sans-serif;
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: #ffffff;
+        .article-meta .content-number {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-purple);
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            padding: 3px 10px;
+            border-radius: 4px;
         }
 
         h1 {
-            font-family: 'Red Hat Display', sans-serif;
-            font-weight: 900;
-            font-size: clamp(2rem, 5vw, 2.8rem);
-            color: #ffffff;
+            font-family: var(--font-display);
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--text-heading);
             line-height: 1.2;
             margin-bottom: 1.25rem;
+            letter-spacing: -0.02em;
         }
 
-        .byline {
-            font-size: 1rem;
-            color: #8892a8;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
+        .article-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 400;
         }
 
-        .date {
-            font-size: 0.9rem;
-            color: #5a6478;
+        .author-block {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
         }
 
-        h2 {
-            font-family: 'Red Hat Display', sans-serif;
+        .author-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1.6rem;
-            color: #ffffff;
-            margin-top: 2.5rem;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .author-info .name {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-heading);
+        }
+
+        .author-info .role {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Headings */
+        h2 {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-top: 3rem;
             margin-bottom: 1rem;
+            letter-spacing: -0.01em;
+            line-height: 1.3;
         }
 
         h3 {
-            font-family: 'Red Hat Display', sans-serif;
-            font-weight: 700;
-            font-size: 1.25rem;
-            color: #ffffff;
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-heading);
             margin-top: 2rem;
             margin-bottom: 0.75rem;
+            line-height: 1.4;
         }
 
+        /* Body text */
         p {
             margin-bottom: 1.25rem;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: var(--text-heading);
+            font-weight: 600;
         }
 
         a {
-            color: #00d4ff;
-            text-decoration: none;
-            transition: opacity 0.2s;
+            color: var(--accent-blue);
+            text-decoration: underline;
+            text-decoration-color: rgba(59, 130, 246, 0.3);
+            text-underline-offset: 3px;
+            transition: text-decoration-color 0.2s;
         }
 
         a:hover {
-            text-decoration: underline;
-            opacity: 0.85;
+            text-decoration-color: var(--accent-blue);
         }
 
-        code {
-            font-family: 'Courier New', Courier, monospace;
-            background: #141824;
-            padding: 0.15em 0.4em;
-            border-radius: 4px;
-            font-size: 0.92em;
-            color: #c8d0e0;
-        }
-
+        /* Concept cards */
         .concept-card {
-            background: #111628;
-            border: 1px solid #1e2540;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
             border-radius: 10px;
             padding: 1.5rem 1.75rem;
             margin: 1.75rem 0;
         }
 
-        .concept-card h3 {
-            margin-top: 0;
-            font-size: 1.15rem;
+        .concept-card .card-label {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-blue);
+            margin-bottom: 0.6rem;
         }
 
-        .concept-card p:last-child {
+        .concept-card h4 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin-bottom: 0.6rem;
+        }
+
+        .concept-card p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
             margin-bottom: 0;
+            line-height: 1.65;
         }
 
-        .stat-row {
-            display: flex;
+        .concept-card p + p {
+            margin-top: 0.75rem;
+        }
+
+        /* Stat boxes */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 1rem;
-            flex-wrap: wrap;
             margin: 1.75rem 0;
         }
 
         .stat-box {
-            flex: 1;
-            min-width: 180px;
-            background: #111628;
-            border: 1px solid #1e2540;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
             border-radius: 10px;
-            padding: 1.25rem;
+            padding: 1.25rem 1.5rem;
             text-align: center;
         }
 
-        .stat-box .number {
-            font-family: 'Red Hat Display', sans-serif;
-            font-weight: 900;
-            font-size: 1.8rem;
-            color: #00d4ff;
-            display: block;
-            margin-bottom: 0.25rem;
+        .stat-box .stat-value {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            line-height: 1.2;
         }
 
-        .stat-box .label {
+        .stat-box .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.35rem;
+            line-height: 1.4;
+        }
+
+        /* Example blocks */
+        .example-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 0 10px 10px 0;
+            padding: 1.5rem 1.75rem;
+            margin: 1.75rem 0;
+        }
+
+        .example-block .example-label {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-cyan);
+            margin-bottom: 0.6rem;
+        }
+
+        .example-block p {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .example-block p:last-child {
+            margin-bottom: 0;
+        }
+
+        code {
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.88em;
+            background: rgba(59, 130, 246, 0.08);
+            color: var(--accent-cyan);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 8px;
+            padding: 1.25rem 1.5rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
             font-size: 0.85rem;
-            color: #8892a8;
-            font-weight: 500;
+            line-height: 1.6;
         }
 
-        ul {
+        pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        /* Lists */
+        ul, ol {
             margin-bottom: 1.25rem;
             padding-left: 1.5rem;
         }
 
         li {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
         }
 
-        .divider {
+        /* Latency table */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .latency-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+
+        .latency-table th,
+        .latency-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(30, 58, 95, 0.4);
+        }
+
+        .latency-table th {
+            font-family: var(--font-display);
+            font-weight: 600;
+            color: var(--text-heading);
+            background: rgba(17, 24, 39, 0.6);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .latency-table td {
+            color: var(--text-primary);
+        }
+
+        .latency-table tr:hover td {
+            background: rgba(59, 130, 246, 0.04);
+        }
+
+        .latency-table .savings {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        /* Divider */
+        hr {
+            border: none;
             height: 1px;
-            background: linear-gradient(90deg, transparent, #1e2540, transparent);
+            background: rgba(30, 58, 95, 0.4);
             margin: 2.5rem 0;
         }
 
-        .cta-section {
-            background: linear-gradient(135deg, #111628 0%, #141830 100%);
-            border: 1px solid #1e2540;
+        /* Table of contents */
+        .toc {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 1.5rem 1.75rem;
+            margin: 2rem 0 3rem;
+        }
+
+        .toc h3 {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
+        .toc ol {
+            padding-left: 1.25rem;
+            margin-bottom: 0;
+        }
+
+        .toc li {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.92rem;
+            transition: color 0.2s;
+        }
+
+        .toc a:hover {
+            color: var(--accent-blue);
+        }
+
+        /* Callout */
+        .callout {
+            background: rgba(59, 130, 246, 0.06);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin: 1.75rem 0;
+        }
+
+        .callout p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        /* CTA */
+        .cta-block {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.08));
+            border: 1px solid rgba(59, 130, 246, 0.25);
             border-radius: 12px;
             padding: 2rem;
             margin: 2.5rem 0;
             text-align: center;
         }
 
-        .cta-section h3 {
+        .cta-block h3 {
             margin-top: 0;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
         }
 
-        .cta-links {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 1.25rem;
-        }
-
-        .cta-links a {
-            display: inline-block;
-            padding: 0.65rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 500;
+        .cta-block p {
+            color: var(--text-secondary);
             font-size: 0.95rem;
-            transition: transform 0.15s, opacity 0.2s;
         }
 
-        .cta-links a:hover {
+        .cta-block .btn {
+            display: inline-block;
+            background: var(--accent-blue);
+            color: white;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .cta-block .btn:hover {
+            background: #2563eb;
             transform: translateY(-1px);
-            text-decoration: none;
         }
 
-        .cta-primary {
-            background: #00d4ff;
-            color: #0a0e1a !important;
-        }
-
-        .cta-secondary {
-            border: 1px solid #00d4ff;
-            color: #00d4ff !important;
-        }
-
-        .footer-attribution {
-            text-align: center;
-            padding: 2rem 1.5rem 3rem;
-            color: #5a6478;
-            font-size: 0.9rem;
-        }
-
-        .footer-attribution .name {
-            color: #8892a8;
-            font-weight: 500;
-        }
-
-        .bottom-nav {
-            max-width: 800px;
+        /* Footer */
+        footer {
+            max-width: 780px;
             margin: 0 auto;
-            padding: 0 1.5rem 1rem;
+            padding: 2rem 1.5rem 3rem;
+            border-top: 1px solid rgba(30, 58, 95, 0.4);
+        }
+
+        .footer-inner {
             display: flex;
-            gap: 1.5rem;
+            align-items: center;
+            justify-content: space-between;
             flex-wrap: wrap;
-            justify-content: center;
+            gap: 1rem;
         }
 
-        .bottom-nav a {
-            color: #00d4ff;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9rem;
+        .footer-author {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
 
-        .bottom-nav a:hover {
-            text-decoration: underline;
+        .footer-author strong {
+            color: var(--text-primary);
         }
 
-        @media (max-width: 600px) {
-            body {
-                font-size: 16px;
-            }
+        .footer-cncf {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
 
-            article {
-                padding: 1.5rem 1rem 3rem;
-            }
-
-            .nav-bar {
-                padding: 1.5rem 1rem 0;
-            }
-
-            .stat-box .number {
-                font-size: 1.4rem;
-            }
-
-            .cta-links {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .cta-links a {
-                width: 100%;
-                max-width: 280px;
-                text-align: center;
-            }
+        /* Responsive */
+        @media (max-width: 640px) {
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 1.4rem; }
+            h3 { font-size: 1.15rem; }
+            article { padding: 100px 1rem 60px; }
+            .stat-grid { grid-template-columns: 1fr 1fr; }
+            .nav-links { gap: 0.75rem; }
+            .nav-links a:not(.btn-nav) { display: none; }
+            .footer-inner { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
@@ -327,149 +604,677 @@
 
 <div class="gradient-bar"></div>
 
-<nav class="nav-bar">
-    <a href="https://markellr-redhat.github.io/llm-d-content-hub/">Back to Content Hub</a>
-    <a href="../">Open Interactive Visualizer</a>
+<nav>
+    <div class="nav-inner">
+        <a href="../" class="nav-brand">
+            llm-d
+            <span class="badge">Content Hub</span>
+        </a>
+        <div class="nav-links">
+            <a href="https://markellr-redhat.github.io/llm-d-content-hub/">Content Hub</a>
+            <a href="../" class="btn-nav">Interactive Visualizer</a>
+        </div>
+    </div>
 </nav>
 
 <article>
-    <div class="header">
-        <div class="header-brand">
-            <img src="https://llm-d.ai/img/llm-d-icon.png" alt="llm-d icon">
-            <span>llm-d</span>
+    <!-- Article Header -->
+    <header class="article-header">
+        <div class="article-meta">
+            <span class="content-number">Content 16</span>
+            <span class="tag">Deep Dive</span>
+            <span class="date">June 2025</span>
         </div>
-        <h1>Why AI Agents Need llm-d: The Inference Pattern Nobody Planned For</h1>
-        <div class="byline">Markell Rawls, Developer Advocate, Red Hat</div>
-        <div class="date">June 2025</div>
+        <h1>Why Agentic Workloads Are the Killer App for KV&nbsp;Cache-Aware Routing</h1>
+        <p class="article-subtitle">
+            AI agents make 5&ndash;30+ LLM calls per user request, and every one of those calls shares a common prefix. Without intelligent routing, you are paying the full prefill cost every single time. Here is how llm-d turns that redundancy into a 75% latency reduction.
+        </p>
+        <div class="author-block">
+            <div class="author-avatar">MR</div>
+            <div class="author-info">
+                <div class="name">Markell Rawls</div>
+                <div class="role">AI Evangelist, Red Hat</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h3>In This Article</h3>
+        <ol>
+            <li><a href="#killer-app">Why Agentic Workloads Are the Killer App</a></li>
+            <li><a href="#prefix-cache">The Prefix Cache Advantage</a></li>
+            <li><a href="#multi-turn">Multi-Turn Conversation Routing</a></li>
+            <li><a href="#multi-agent">Multi-Agent Cache Sharing</a></li>
+            <li><a href="#mcp">MCP and llm-d</a></li>
+            <li><a href="#latency">Latency Analysis</a></li>
+            <li><a href="#scaling">The Agentic Scaling Challenge</a></li>
+            <li><a href="#production">Production Patterns for Agentic Inference</a></li>
+        </ol>
     </div>
 
-    <p>I built an AI agent that worked beautifully in dev. It could research a topic, synthesize findings from multiple sources, answer follow-up questions, and even trigger downstream workflows. It felt like magic -- the kind of demo that makes a conference room go quiet. Then I deployed it to production, watched real users hit it, and saw the inference bill.</p>
+    <!-- Section 1: Why Agentic Workloads Are the Killer App -->
+    <h2 id="killer-app">Why Agentic Workloads Are the Killer App for KV Cache-Aware Routing</h2>
 
-    <p>The cost was not what I expected. Neither was the latency. The numbers did not just creep up from my dev environment estimates -- they leaped. And as I dug in, I realized the problem was not the model, the prompts, or even the traffic volume. The problem was how the infrastructure was routing my agent's requests. Every single inference call was being treated like a stateless web request, scattered across GPU pods with zero awareness of what came before. My agent's carefully orchestrated reasoning chains were being shredded by a load balancer that had no idea what it was doing.</p>
+    <p>
+        The era of single-shot LLM calls is ending. The pattern that dominated 2023 and early 2024&mdash;send a prompt, get a completion, done&mdash;is giving way to something far more demanding: <strong>agentic workloads</strong>. An AI agent does not make one LLM call per user request. It makes five. Ten. Sometimes thirty or more. Each call represents a step in a reasoning chain: interpreting the user's intent, deciding which tool to invoke, parsing the tool's output, deciding the next action, synthesizing a final response, and checking its own work along the way.
+    </p>
 
-    <p>That experience sent me down a rabbit hole. What I found on the other end was <code>llm-d</code> -- and a fundamentally different way to think about inference routing for agentic workloads.</p>
+    <p>
+        This is the fundamental shift that makes KV cache-aware routing not just useful, but essential. When you are running a simple chatbot, a cold cache miss on a single call adds maybe 400 milliseconds of extra prefill time. Annoying, but tolerable. When you are running an agent that chains eight LLM calls sequentially, that 400ms penalty compounds. You are not just adding latency to one response; you are adding it to every step of the agent's reasoning loop.
+    </p>
 
-    <h2>Agent Traffic Is Not API Traffic</h2>
-
-    <p>If you have been building traditional API services, you have internalized a mental model: requests are mostly independent, roughly uniform in cost, and can be distributed across backends with simple strategies. Round-robin works. Least-connections works. These heuristics have powered the internet for decades.</p>
-
-    <p>AI agents break every one of those assumptions.</p>
-
-    <div class="concept-card">
-        <h3>Multi-Turn Conversations</h3>
-        <p>When a user has a five-turn conversation with an agent, that is not one inference call -- it is five, each one carrying the growing context of everything that came before. Turn one might be 500 tokens. Turn five might be 4,000. Each turn is a separate HTTP request, and each one benefits enormously from landing on a GPU pod that already has the previous turns' computed context in memory.</p>
-    </div>
-
-    <div class="concept-card">
-        <h3>Tool-Calling Chains</h3>
-        <p>Modern agents do not just generate text. They call tools. An agent handling a research question might call a search API, analyze the results, call a database, summarize its findings, then format a response. That is five or more inference calls from a single user request -- each building on the same base context. In the tool-calling pattern, the agent sends partial results back to the model repeatedly, and each round trip is a new inference request with a shared prefix.</p>
-    </div>
-
-    <div class="concept-card">
-        <h3>Burst Patterns</h3>
-        <p>Agents do not politely queue their requests and wait for responses. When an agent decides it needs to search three databases in parallel, it fires three inference calls simultaneously. When ten users trigger the same agent workflow in the same minute, you get burst patterns that look nothing like steady-state API traffic. The load is spiky, correlated, and unpredictable.</p>
-    </div>
-
-    <div class="concept-card">
-        <h3>Context Switching</h3>
-        <p>A single agent instance might be handling multiple users, each with different conversation histories, different cached contexts, and different topic domains. The infrastructure has to juggle all of these stateful sessions across a fleet of GPU pods, and getting it wrong means recomputing context from scratch -- the single most expensive operation in inference serving.</p>
-    </div>
-
-    <h2>The Hidden Cost: KV Cache Misses</h2>
-
-    <p>To understand why this matters, you need to understand one piece of GPU mechanics: the <code>KV cache</code>.</p>
-
-    <p>When a large language model processes your prompt, it computes attention keys and values for every token. These computed results -- the KV cache -- live in GPU memory. If your next request shares the same prefix (the same system prompt, the same conversation history, the same tool-call chain), the model can skip recomputing all of that and jump straight to the new tokens. This is the difference between a Time to First Token (TTFT) of 500 milliseconds or more and a TTFT under 100 milliseconds.</p>
-
-    <p>Now here is the problem: a standard Kubernetes load balancer -- round-robin, least-connections, random -- has no concept of KV cache state. It does not know which GPU pod has which context cached. It just distributes requests.</p>
-
-    <div class="stat-row">
+    <div class="stat-grid">
         <div class="stat-box">
-            <span class="number">~5%</span>
-            <span class="label">Cache hit rate with round-robin routing (agent workloads)</span>
+            <div class="stat-value">5-30+</div>
+            <div class="stat-label">LLM calls per agent request</div>
         </div>
         <div class="stat-box">
-            <span class="number">80-95%</span>
-            <span class="label">Cache hit rate with llm-d prefix-aware routing</span>
+            <div class="stat-value">~400ms</div>
+            <div class="stat-label">Cold prefill overhead per call</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">4+ sec</div>
+            <div class="stat-label">Wasted on cold starts (10 calls)</div>
         </div>
     </div>
 
-    <p>For agent workloads, round-robin routing achieves roughly a 5% KV cache hit rate. That means 95% of your inference requests are cold starts -- the model recomputes the entire context from scratch, burning GPU cycles and wall-clock time. Your users feel it. Your infrastructure budget feels it.</p>
+    <p>
+        Consider a concrete example. A customer support agent receives a user message: "I need to return the shoes I ordered last week." The agent's execution looks something like this: (1) parse the user intent, (2) call a tool to look up recent orders, (3) interpret the order data, (4) call a tool to check the return policy, (5) interpret the policy, (6) call a tool to initiate the return, (7) confirm the return was successful, (8) compose a final response to the user. That is eight LLM calls, each of which includes the same system prompt and tool definitions as its prefix. Without cache-aware routing, every single one of those calls lands on a random pod and pays the full prefill cost for the entire shared prefix.
+    </p>
 
-    <h2>How llm-d Fixes This</h2>
+    <p>
+        The math is straightforward and damning. If each call carries roughly 2,300 tokens of shared prefix (a typical system prompt plus tool definitions), and your average prefill throughput is around 5,000&ndash;6,000 tokens per second on a well-utilized GPU, you are spending approximately 400ms just recomputing the KV cache for that prefix on every call. Multiply by eight calls: that is 3.2 seconds of pure waste. The user is staring at a loading spinner for over three seconds longer than necessary, not because the model is slow, but because the infrastructure is doing redundant work.
+    </p>
 
-    <p><code>llm-d</code> is an inference gateway built for exactly this problem. It is not a model server -- it sits in front of your <code>vLLM</code> backends and makes routing decisions based on what is actually happening on the GPUs. Here is how it works.</p>
+    <div class="concept-card">
+        <div class="card-label">Key Insight</div>
+        <h4>The Compound Latency Effect</h4>
+        <p>
+            In traditional single-call LLM applications, a cache miss adds a few hundred milliseconds&mdash;barely noticeable. In agentic workloads, that penalty compounds across every step of the reasoning chain. Ten calls with 400ms of overhead each means 4 seconds of wasted compute. At scale, this is the difference between a snappy agent and one that feels broken.
+        </p>
+    </div>
 
-    <h3>Prefix-Aware Routing</h3>
+    <p>
+        This is precisely the problem that <code>llm-d</code> solves. llm-d is a CNCF Sandbox project purpose-built for distributed LLM inference routing. It sits in front of your vLLM backends and uses its EPP (Endpoint Picker Policy) component to make intelligent routing decisions. When an agent's first call lands on a pod and computes the KV cache for its prefix, llm-d ensures that all subsequent calls from the same agent are routed to that same pod. The prefix is already cached. Calls two through eight skip the prefill entirely for the shared tokens and go straight to computing attention only for the new, call-specific tokens.
+    </p>
 
-    <p>When a request arrives, <code>llm-d</code> hashes the prompt prefix and matches it against a registry of which pods currently hold which cached prefixes. If pod 3 already has the first 2,000 tokens of this conversation cached in its KV store, the request goes to pod 3. Not randomly. Not round-robin. Intentionally, because that is where the work has already been done.</p>
+    <p>
+        The result is dramatic. Instead of 3.2 seconds of redundant prefill across eight calls, you pay 400ms once on the first call and roughly 65ms on each subsequent call (for the small amount of new, call-specific context). Total prefill time drops from 3.2 seconds to 855 milliseconds&mdash;a 73% reduction. That is not an optimization. That is a categorical change in the user experience.
+    </p>
 
-    <h3>Cache-Aware Scheduling</h3>
+    <!-- Section 2: The Prefix Cache Advantage -->
+    <h2 id="prefix-cache">The Prefix Cache Advantage: System Prompts and Tool Definitions as Shared Prefixes</h2>
 
-    <p>The core intelligence lives in the <code>EPP</code> -- the Endpoint Picker Policy. The EPP maintains a real-time view of cache state across the entire fleet. It knows which pods hold which KV cache entries, how full each pod's cache is, and how recently each entry was accessed. This is not guesswork -- it is informed scheduling based on actual GPU memory state.</p>
+    <p>
+        To understand why llm-d's approach works so well for agentic workloads, you need to understand how KV caches work at the GPU level and why prefixes are the natural unit of caching.
+    </p>
 
-    <h3>Load-Aware Balancing</h3>
+    <p>
+        When a transformer model processes a prompt, it computes <strong>key</strong> and <strong>value</strong> tensors for every token at every layer of attention. These tensors are the model's "memory" of the tokens it has seen&mdash;they encode the contextual relationships between tokens that the model needs to generate its output. For a model like Llama 3.1 70B with 80 attention layers and a hidden dimension of 8192, each token produces a KV pair that consumes a non-trivial amount of GPU memory and, critically, a non-trivial amount of compute to generate.
+    </p>
 
-    <p>Cache affinity alone would be dangerous. If one pod happens to cache a popular prefix, naive affinity would send all traffic there, overloading it while other pods sit idle. <code>llm-d</code> balances cache affinity against real-time load metrics. If the ideal pod is saturated, the request goes to the next-best option -- maybe a pod with a partial prefix match, or if necessary, a cold pod that can absorb the load. The system optimizes for throughput, not just cache hits.</p>
+    <p>
+        The key insight is that <strong>KV cache entries are deterministic for a given prefix</strong>. If two requests share the same first 2,000 tokens, their KV cache entries for those 2,000 tokens are byte-for-byte identical. There is no randomness in the attention computation during prefill&mdash;the model computes the exact same key and value tensors regardless of what comes after the prefix. This means that once you have computed the KV cache for a prefix on a specific GPU, any subsequent request that starts with that same prefix can reuse those cached tensors and skip directly to computing attention for the new tokens.
+    </p>
 
-    <h3>The Results</h3>
+    <h3>Why System Prompts and Tool Definitions Are Ideal for Caching</h3>
 
-    <div class="stat-row">
+    <p>
+        In agentic architectures, the shared prefix is not some small header or boilerplate. It is substantial, and it is the most computationally expensive part of the prompt to process because it comes first and establishes the context window for everything that follows.
+    </p>
+
+    <p>
+        A typical agent system prompt runs between 500 and 2,000 tokens. It defines the agent's persona, behavioral constraints, output formatting rules, and domain-specific instructions. This is not a one-line "You are a helpful assistant." It is a detailed specification that might look like:
+    </p>
+
+    <pre><code>You are a senior customer support agent for Acme Corp.
+You handle returns, exchanges, and order inquiries.
+
+BEHAVIORAL RULES:
+- Always verify the customer's identity before accessing order data
+- Never disclose internal pricing or margin information
+- Escalate to a human agent if the customer expresses frustration
+  three or more times
+- Always confirm actions before executing them
+...
+(continues for 800+ more tokens of guardrails, tone guidance,
+ output format specifications, and escalation policies)</code></pre>
+
+    <p>
+        On top of that system prompt sit the tool definitions. These are the structured schemas that tell the model what tools it can invoke, what parameters each tool accepts, and what each tool returns. For an agent with five or six tools, these definitions easily add another 200 to 1,000 tokens. Each tool definition includes its name, description, parameter schemas with types and descriptions, required fields, and often example invocations or edge-case guidance.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label">Concrete Example</div>
+        <p>
+            <strong>Agent prefix breakdown:</strong><br>
+            System prompt: 1,500 tokens<br>
+            Tool definitions (6 tools): 800 tokens<br>
+            <strong>Total shared prefix: 2,300 tokens</strong>
+        </p>
+        <p>
+            Without llm-d, every call recomputes attention for all 2,300 prefix tokens. With llm-d, call 1 computes the prefix and caches it. Calls 2 through N skip directly to the call-specific context&mdash;typically just 50&ndash;200 tokens of new conversation or tool output. That is a <strong>90%+ reduction in prefill work per call</strong>.
+        </p>
+    </div>
+
+    <p>
+        The savings are even more pronounced with larger models. Prefill compute scales linearly with both token count and model size. A 2,300-token prefix on a 70B-parameter model takes roughly 400ms to prefill. On a 405B-parameter model, that same prefix might take over a second. In agentic workloads on frontier models, the cost of redundant prefix computation is not just an annoyance&mdash;it is the dominant latency bottleneck.
+    </p>
+
+    <p>
+        llm-d's EPP component tracks which pods have computed KV caches for which prefixes. When a new inference request arrives, the EPP examines the request's prefix and checks whether any active pod already has that prefix cached. If so, it routes the request to that pod. If not, it selects a pod using load-aware heuristics and marks that pod as the new cache holder for that prefix. This lookup is fast&mdash;on the order of microseconds&mdash;because the EPP maintains an in-memory index of prefix hashes to pod assignments.
+    </p>
+
+    <!-- Section 3: Multi-Turn Conversation Routing -->
+    <h2 id="multi-turn">Multi-Turn Conversation Routing: Keeping Full Conversation Context Cached Across Turns</h2>
+
+    <p>
+        The prefix advantage extends far beyond the initial system prompt and tool definitions. In multi-turn conversations&mdash;which are the norm for agentic workloads&mdash;each successive turn adds to the prefix. Turn 1's prompt is the system prompt plus tool definitions plus the user's first message. Turn 2's prompt is all of that, plus the model's first response, plus the user's second message. By turn 5, the "prefix" that is shared with the previous turn might be 6,000 tokens or more.
+    </p>
+
+    <p>
+        This is where <strong>sticky routing</strong> becomes critical. llm-d supports session-aware routing that keeps an entire conversation pinned to the same pod across turns. The mechanics are straightforward: the first request in a conversation is routed to a pod based on prefix matching or load balancing. llm-d then associates the conversation's session identifier with that pod. All subsequent requests carrying the same session ID are routed to the same pod, where the growing KV cache from previous turns is already resident in GPU memory.
+    </p>
+
+    <div class="concept-card">
+        <div class="card-label">Compounding Returns</div>
+        <h4>The Growing Prefix Effect</h4>
+        <p>
+            Each turn of a conversation increases the cached prefix. On turn 1, you cache 1,500 tokens (system prompt + tools). By turn 3, you might have 3,500 tokens cached. By turn 5, 6,000 tokens. The savings compound with each turn because you are skipping more prefill work each time. This means that <strong>the longer a conversation runs, the more valuable cache-aware routing becomes</strong>.
+        </p>
+    </div>
+
+    <p>
+        The numbers tell a compelling story. Consider a five-turn agent conversation where each turn involves two LLM calls (one to decide on an action, one to compose the response):
+    </p>
+
+    <div class="table-wrapper">
+        <table class="latency-table">
+            <thead>
+                <tr>
+                    <th>Turn</th>
+                    <th>Cached Prefix Tokens</th>
+                    <th>TTFT Without llm-d</th>
+                    <th>TTFT With llm-d</th>
+                    <th>Savings</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Turn 1, Call 1</td>
+                    <td>0 (cold start)</td>
+                    <td>450ms</td>
+                    <td>450ms</td>
+                    <td class="savings">&mdash;</td>
+                </tr>
+                <tr>
+                    <td>Turn 1, Call 2</td>
+                    <td>1,500</td>
+                    <td>450ms</td>
+                    <td>75ms</td>
+                    <td class="savings">375ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 2, Call 1</td>
+                    <td>2,200</td>
+                    <td>480ms</td>
+                    <td>60ms</td>
+                    <td class="savings">420ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 2, Call 2</td>
+                    <td>2,800</td>
+                    <td>500ms</td>
+                    <td>55ms</td>
+                    <td class="savings">445ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 3, Call 1</td>
+                    <td>3,500</td>
+                    <td>530ms</td>
+                    <td>50ms</td>
+                    <td class="savings">480ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 3, Call 2</td>
+                    <td>4,000</td>
+                    <td>550ms</td>
+                    <td>48ms</td>
+                    <td class="savings">502ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 4, Call 1</td>
+                    <td>4,800</td>
+                    <td>575ms</td>
+                    <td>45ms</td>
+                    <td class="savings">530ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 4, Call 2</td>
+                    <td>5,400</td>
+                    <td>600ms</td>
+                    <td>42ms</td>
+                    <td class="savings">558ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 5, Call 1</td>
+                    <td>5,700</td>
+                    <td>610ms</td>
+                    <td>41ms</td>
+                    <td class="savings">569ms</td>
+                </tr>
+                <tr>
+                    <td>Turn 5, Call 2</td>
+                    <td>6,000</td>
+                    <td>620ms</td>
+                    <td>40ms</td>
+                    <td class="savings">580ms</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p>
+        Without sticky routing, each of these calls could land on a different pod, paying the full prefill cost every time. The later turns are even more expensive because the growing conversation history means more tokens to prefill from scratch. With llm-d, the first call pays the cold-start cost, and every subsequent call benefits from the growing cached prefix&mdash;with later turns saving the most.
+    </p>
+
+    <p>
+        There is a subtlety here that is worth calling out. When a conversation's KV cache grows large enough, it may exceed what a single pod can keep resident in GPU memory alongside other active requests. llm-d handles this through intelligent cache eviction policies. If a conversation's cache is evicted due to memory pressure, llm-d can either re-route the conversation to a pod with more available cache memory or accept the one-time recomputation cost and re-cache on the same pod. The EPP's awareness of per-pod memory utilization ensures that these decisions are made with full knowledge of the cluster state, rather than blindly sticking to a pod that no longer holds the relevant cache.
+    </p>
+
+    <!-- Section 4: Multi-Agent Cache Sharing -->
+    <h2 id="multi-agent">Multi-Agent Cache Sharing: How Agents with the Same Tools Benefit from Shared Routing</h2>
+
+    <p>
+        So far we have been discussing cache reuse within a single agent's execution or conversation. But the real power of llm-d's approach emerges when you consider <strong>cache sharing across different agents</strong>.
+    </p>
+
+    <p>
+        In production platforms, it is common to have multiple types of agents that share overlapping tooling. A Research Agent, a Code Agent, and a Customer Support Agent might all have access to a <code>web_search</code> tool, a <code>knowledge_base_query</code> tool, and a <code>send_notification</code> tool. Their system prompts differ, but their tool definition blocks may be partially or fully identical. This creates a cross-agent caching opportunity that traditional load balancers completely miss.
+    </p>
+
+    <p>
+        llm-d's prefix matching is not all-or-nothing. It operates at a granular level. If two agents share the first 800 tokens of their prompts (identical tool definitions) but diverge after that (different system prompts), llm-d can still route them to the same pod to take advantage of that 800-token shared prefix. The KV cache for those 800 tokens is reused, and only the divergent portion needs to be computed fresh. This partial prefix matching is one of the more sophisticated aspects of llm-d's EPP implementation, and it is what makes multi-agent cache sharing practical.
+    </p>
+
+    <div class="concept-card">
+        <div class="card-label">Multi-Tenant Power</div>
+        <h4>Shared Prefixes Across Customer Agents</h4>
+        <p>
+            Consider a SaaS platform that hosts AI agents for 50 different customers. Each customer has a unique system prompt, but all 50 agents use the same set of tools (CRM lookup, email send, calendar check, knowledge base search). The tool definitions alone might account for 900 tokens of shared prefix. llm-d can route requests from all 50 agents to a set of pods that keep those shared tool definitions cached, saving 900 tokens of prefill computation on <em>every single call</em> across all customers.
+        </p>
+        <p>
+            At 1,000 requests per second across all tenants, that is 900,000 tokens per second of redundant prefill eliminated. At typical GPU prefill throughput, that translates to freeing up the equivalent of 150+ GPU-seconds of compute every second&mdash;a substantial portion of the cluster's total capacity returned to productive use.
+        </p>
+    </div>
+
+    <p>
+        This multi-agent cache sharing is particularly valuable in platforms that implement a "tool marketplace" pattern, where agents can be composed from a library of standardized tools. The more standardization there is in tool definitions, the more cache sharing llm-d can exploit. This creates a virtuous cycle: standardizing on common tool schemas does not just improve developer experience&mdash;it directly reduces inference costs through better cache utilization.
+    </p>
+
+    <p>
+        There is an architectural implication here worth dwelling on. Traditional load balancers treat every request as independent and optimize for even distribution. llm-d inverts this: it deliberately creates <strong>affinity</strong> between requests that share prefixes, concentrating them on the same pods. This is counterintuitive from a load-balancing perspective, but it is the correct optimization for LLM inference because the compute savings from cache reuse far outweigh the marginal cost of slightly uneven load distribution. llm-d's EPP balances these concerns by factoring in both cache affinity and current pod load, routing to a cache-holding pod only if it has sufficient capacity to serve the request without excessive queuing delay.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label">Multi-Agent Scenario</div>
+        <p>
+            <strong>Agent A (Research):</strong> web_search + knowledge_base + summarize (shared tools: 600 tokens) + unique system prompt (900 tokens)<br>
+            <strong>Agent B (Support):</strong> web_search + knowledge_base + ticket_create (shared tools: 600 tokens) + unique system prompt (1,100 tokens)<br>
+            <strong>Agent C (Code):</strong> web_search + code_execute + file_read (shared tools: 500 tokens) + unique system prompt (800 tokens)
+        </p>
+        <p>
+            Agents A and B share 600 tokens of tool definitions. All three share <code>web_search</code> (~200 tokens). llm-d can route requests from A and B to the same pod to exploit the 600-token shared prefix, while still routing C to that pod when it benefits from the 200-token <code>web_search</code> cache.
+        </p>
+    </div>
+
+    <!-- Section 5: MCP and llm-d -->
+    <h2 id="mcp">MCP and llm-d: How Model Context Protocol Workloads Flow Through the Routing Layer</h2>
+
+    <p>
+        The <strong>Model Context Protocol (MCP)</strong> is rapidly becoming the standard interface for connecting LLM agents to external tools and data sources. MCP defines a structured format for exposing tools, resources, and prompts to LLM-based applications. This standardization has a profound and underappreciated implication for inference routing: MCP creates <strong>predictable, standardized prefix patterns</strong> that llm-d can exploit for cache optimization.
+    </p>
+
+    <p>
+        When an MCP-compliant agent starts up, it connects to one or more MCP servers and retrieves their tool manifests. These manifests are translated into the tool definition blocks that form part of the agent's prompt prefix. Because MCP defines a standard schema for tool definitions&mdash;including name, description, input schema with JSON Schema types, and annotations&mdash;the resulting token sequences are highly regular and predictable across different agents that connect to the same MCP servers.
+    </p>
+
+    <h3>MCP Creates a Natural Caching Hierarchy</h3>
+
+    <p>
+        Consider the layers of an MCP-enabled agent's prompt:
+    </p>
+
+    <ol>
+        <li><strong>Layer 1: MCP tool definitions</strong> &mdash; shared across all agents connecting to the same MCP servers. Highly cacheable.</li>
+        <li><strong>Layer 2: Agent system prompt</strong> &mdash; shared across all instances of the same agent type. Cacheable per agent type.</li>
+        <li><strong>Layer 3: Conversation history</strong> &mdash; unique per conversation session. Cacheable only with sticky routing.</li>
+        <li><strong>Layer 4: Current user message</strong> &mdash; unique per request. Never cached.</li>
+    </ol>
+
+    <p>
+        llm-d can exploit every layer of this hierarchy. Requests from different agent types that share MCP servers benefit from Layer 1 caching. Requests from the same agent type benefit from Layers 1 and 2. Requests within the same conversation benefit from Layers 1, 2, and 3. The deeper the shared prefix, the greater the cache savings.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label">MCP Flow Through llm-d</div>
+        <p>
+            <strong>Step 1:</strong> Agent connects to MCP servers (filesystem, database, web search) and retrieves tool manifests.<br>
+            <strong>Step 2:</strong> Tool manifests are serialized into the prompt's tool definition block (~700 tokens).<br>
+            <strong>Step 3:</strong> Agent's system prompt is prepended (~1,200 tokens).<br>
+            <strong>Step 4:</strong> First inference request arrives at llm-d with full prefix (1,900 tokens).<br>
+            <strong>Step 5:</strong> llm-d routes to a pod, which computes and caches the KV for all 1,900 tokens.<br>
+            <strong>Step 6:</strong> Subsequent MCP tool calls from this agent (and others sharing the same MCP servers) route to the same pod, skipping up to 1,900 tokens of prefill.
+        </p>
+    </div>
+
+    <p>
+        The combination of MCP and llm-d creates a particularly powerful pattern for tool-call-heavy workflows. Consider an agent that executes a multi-step task involving five consecutive tool calls. Each tool call follows the same pattern: the agent sends a request to the LLM with the full context (system prompt + tool definitions + conversation so far + tool result), the LLM decides on the next tool to call, and the cycle repeats. Without cache-aware routing, each of those five requests would recompute the entire growing prefix from scratch. With llm-d's sticky routing, only the incrementally new tokens (the latest tool result and the new user context) require fresh prefill computation.
+    </p>
+
+    <p>
+        MCP also introduces a concept of <strong>prompt templates</strong>&mdash;standardized prompt structures that MCP servers can expose for common tasks. When multiple agents use the same MCP prompt template, the resulting token sequences share even more prefix overlap, further amplifying llm-d's cache hit rates. As MCP adoption grows and tool definitions become more standardized across the ecosystem, the cache efficiency of llm-d-routed inference clusters will improve correspondingly&mdash;a trend that makes the MCP+llm-d combination increasingly compelling over time.
+    </p>
+
+    <p>
+        There is a practical consideration here for platform architects. If you control the MCP servers your agents connect to, you can optimize for cache efficiency by ordering your tool definitions consistently. llm-d matches prefixes from the beginning of the prompt, so placing the most commonly shared tool definitions first in the serialization order maximizes the length of the shared prefix across agents. This is a small implementation detail that can have an outsized impact on cache hit rates in multi-agent deployments.
+    </p>
+
+    <!-- Section 6: Latency Analysis -->
+    <h2 id="latency">Latency Analysis: How Much Time Intelligent Routing Saves Per Agent Execution</h2>
+
+    <p>
+        Let us put concrete numbers on the savings. The following analysis models a realistic agentic workload and compares total Time-to-First-Token (TTFT) with and without llm-d's cache-aware routing.
+    </p>
+
+    <h3>Setup: A Typical Agent Execution</h3>
+
+    <ul>
+        <li><strong>System prompt:</strong> 1,500 tokens (behavioral rules, persona, output format)</li>
+        <li><strong>Tool definitions:</strong> 800 tokens (6 tools with JSON Schema parameters)</li>
+        <li><strong>Average user message + context per call:</strong> 150 tokens</li>
+        <li><strong>Total calls per execution:</strong> 8 (typical for a multi-step task)</li>
+        <li><strong>Model:</strong> 70B parameters, served on A100 80GB GPUs via vLLM</li>
+        <li><strong>Prefill throughput:</strong> ~5,500 tokens/second under moderate load</li>
+    </ul>
+
+    <h3>Without llm-d: Random Routing</h3>
+
+    <p>
+        With random or round-robin routing, each of the 8 calls lands on a different pod (or at best, a pod that has already evicted any relevant cache). Every call pays the full prefill cost for the shared prefix plus its unique context:
+    </p>
+
+    <pre><code>Call 1: (1500 + 800 + 150) / 5500 = 445ms
+Call 2: (1500 + 800 + 150) / 5500 = 445ms
+Call 3: (1500 + 800 + 200) / 5500 = 454ms  (growing context)
+Call 4: (1500 + 800 + 250) / 5500 = 463ms
+Call 5: (1500 + 800 + 300) / 5500 = 472ms
+Call 6: (1500 + 800 + 350) / 5500 = 481ms
+Call 7: (1500 + 800 + 400) / 5500 = 490ms
+Call 8: (1500 + 800 + 450) / 5500 = 500ms
+
+Average TTFT: ~469ms
+Total prefill time across 8 calls: 3,750ms</code></pre>
+
+    <h3>With llm-d: Cache-Aware Routing</h3>
+
+    <p>
+        With llm-d, call 1 computes the full prefix and caches it. Calls 2 through 8 only need to compute attention for the new tokens (the latest tool result, user message, or agent reasoning). Each call also incurs a small overhead (~40ms) for cache lookup and validation:
+    </p>
+
+    <pre><code>Call 1: (1500 + 800 + 150) / 5500 = 445ms  (cold start, full prefill)
+Call 2: 150 / 5500 + 40ms overhead  =  67ms  (only new tokens)
+Call 3: 200 / 5500 + 40ms overhead  =  76ms
+Call 4: 250 / 5500 + 40ms overhead  =  85ms
+Call 5: 300 / 5500 + 40ms overhead  =  95ms
+Call 6: 350 / 5500 + 40ms overhead  = 104ms
+Call 7: 400 / 5500 + 40ms overhead  = 113ms
+Call 8: 450 / 5500 + 40ms overhead  = 122ms
+
+Average TTFT (calls 2-8): ~95ms
+Total prefill time across 8 calls: 1,107ms</code></pre>
+
+    <div class="stat-grid">
         <div class="stat-box">
-            <span class="number">2-5x</span>
-            <span class="label">TTFT improvement</span>
+            <div class="stat-value">3,750ms</div>
+            <div class="stat-label">Total prefill without llm-d</div>
         </div>
         <div class="stat-box">
-            <span class="number">40-60%</span>
-            <span class="label">Fewer cold cache starts</span>
+            <div class="stat-value">1,107ms</div>
+            <div class="stat-label">Total prefill with llm-d</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">70%</div>
+            <div class="stat-label">Reduction in prefill time</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">2.6s</div>
+            <div class="stat-label">Saved per agent execution</div>
         </div>
     </div>
 
-    <p>In practice, this translates to TTFT improvements of 2-5x and a 40-60% reduction in cold cache starts. For the end user talking to your agent, the difference is palpable -- responses that felt sluggish become snappy. For your infrastructure team, it means fewer GPU pods doing redundant work, which translates directly to cost savings.</p>
+    <h3>At Scale: 1,000 Concurrent Agents</h3>
 
-    <div class="divider"></div>
+    <p>
+        Now multiply by the number of concurrent agents in a production deployment. A mid-sized platform might run 1,000 concurrent agent executions, each making 8 LLM calls. That is 8,000 inference requests in a burst. Without llm-d, those requests consume 3,750 seconds of cumulative prefill time (across all requests). With llm-d, that drops to 1,107 seconds&mdash;freeing up 2,643 seconds of GPU compute that can be used to serve additional requests instead of recomputing cached prefixes.
+    </p>
 
-    <h2>Why This Belongs in the CNCF Ecosystem</h2>
+    <p>
+        In GPU-hour terms: at typical A100 utilization, the prefill savings from llm-d across 1,000 concurrent agents translate to approximately <strong>44 GPU-minutes of freed compute per minute</strong> of wall-clock operation. That is nearly 44 GPUs' worth of prefill work that disappears through intelligent routing. At current cloud GPU pricing for A100 instances, this can represent tens of thousands of dollars per month in reduced infrastructure spend for a large-scale agentic platform. The savings grow linearly with the number of concurrent agents and the average number of calls per agent execution.
+    </p>
 
-    <p><code>llm-d</code> is a <a href="https://www.cncf.io/">CNCF Sandbox project</a>, and that matters for reasons beyond prestige. It means the project is built to work with the tools platform teams already use.</p>
+    <div class="concept-card">
+        <div class="card-label">Latency Budget</div>
+        <h4>Where the Time Goes in an Agent Execution</h4>
+        <p>
+            <strong>Without llm-d:</strong> Prefill (3.75s) + Generation (2.4s) + Tool execution (1.2s) + Network overhead (0.3s) = <strong>7.65s total</strong>
+        </p>
+        <p>
+            <strong>With llm-d:</strong> Prefill (1.11s) + Generation (2.4s) + Tool execution (1.2s) + Network overhead (0.3s) = <strong>5.01s total</strong>
+        </p>
+        <p>
+            Prefill goes from being the dominant latency component (49% of total) to a smaller one (22% of total). The agent's performance becomes bottlenecked by generation speed and tool execution time&mdash;which is where it <em>should</em> be bottlenecked, because those represent actual useful work rather than redundant recomputation.
+        </p>
+    </div>
 
-    <p>The EPP runs as a Kubernetes-native component, integrating with the <a href="https://gateway-api.sigs.k8s.io/">Gateway API</a> -- the same standard that is replacing Ingress for HTTP routing. If your team already manages Kubernetes clusters and understands Gateway API resources, deploying <code>llm-d</code> does not require learning an entirely new operational model. It extends what you already know.</p>
+    <p>
+        There is one more dimension to the latency analysis that matters in practice: <strong>tail latency</strong>. Without cache-aware routing, every call has roughly the same TTFT distribution because every call is doing roughly the same amount of work. With llm-d, calls 2 through N have dramatically lower and more consistent TTFT because the cached prefill is a deterministic operation (cache lookup) rather than a variable one (GPU-dependent prefill computation). This means llm-d does not just improve median latency&mdash;it also tightens the p99, which is often the metric that matters most for user-facing agent applications.
+    </p>
 
-    <p>It works with any <code>vLLM</code> backend, which means you are not locked into a specific model serving stack. Swap models, scale pods, upgrade vLLM versions -- the routing layer adapts. This composability is exactly the kind of thing the CNCF ecosystem is designed to foster: focused components that do one thing well and integrate cleanly with the rest of the stack.</p>
+    <!-- Section 7: The Agentic Scaling Challenge -->
+    <h2 id="scaling">The Agentic Scaling Challenge: Why Agent Workloads Are Burstier and Harder to Predict</h2>
 
-    <p>For platform teams that are being asked to support AI workloads alongside traditional services, this is significant. You do not need to build a separate operational universe for inference. You extend your existing Kubernetes platform with inference-aware routing, and your existing monitoring, scaling, and deployment pipelines continue to work.</p>
+    <p>
+        Agentic workloads do not just add more inference requests&mdash;they fundamentally change the <em>shape</em> of traffic. Understanding this is critical for anyone building infrastructure to serve AI agents at scale.
+    </p>
 
-    <div class="divider"></div>
+    <h3>The Amplification Problem</h3>
 
-    <h2>The Bigger Picture</h2>
+    <p>
+        In a traditional LLM application, one user request produces one inference call. The traffic pattern is relatively predictable: if you have 100 users making requests at an average rate of 2 requests per minute, you expect approximately 200 inference calls per minute. You can provision and autoscale for this with standard techniques.
+    </p>
 
-    <p>We are at an inflection point. The industry spent the last two years optimizing model training -- bigger clusters, faster interconnects, better parallelism strategies. That work matters. But the next wave of AI adoption is not about training. It is about inference at scale, and specifically about agentic inference, where the access patterns are fundamentally different from anything we have optimized for before.</p>
+    <p>
+        Agents break this model entirely. One user request might produce 3 inference calls (a simple lookup) or 25 inference calls (a complex multi-step research task). The amplification factor is <strong>variable and data-dependent</strong>&mdash;it depends on the agent's reasoning, the complexity of the user's request, and the results of intermediate tool calls. You cannot predict it from the input alone. An agent that usually makes 5 calls might make 20 if a tool returns an error and the agent decides to try alternative approaches.
+    </p>
 
-    <p>Agents are not a niche use case. Every major cloud provider, every enterprise AI platform, and an enormous number of startups are building agent frameworks. The volume of inference traffic from agents is growing faster than the volume from direct human-to-model interactions. And all of that traffic has the same characteristics: multi-turn, tool-heavy, bursty, and deeply stateful.</p>
-
-    <p>The infrastructure layer has to catch up. Treating inference requests as stateless HTTP calls was fine when a user sent one question and got one answer. It falls apart when an agent sends thirty inference calls in ten seconds, each one depending on the context built by the ones before it.</p>
-
-    <p><code>llm-d</code> is one of the first projects to take this problem seriously at the routing layer. It is not the only piece of the puzzle -- you still need efficient model servers, smart autoscaling, and thoughtful prompt engineering. But without cache-aware routing, you are leaving performance and money on the table at the layer where it matters most: the moment a request meets a GPU.</p>
-
-    <div class="cta-section">
-        <h3>See It in Action</h3>
-        <p>I built an interactive visualizer that shows exactly how <code>llm-d</code> routes agent requests differently from traditional load balancers. Watch requests flow through the system, see cache hits light up, and compare the difference side by side.</p>
-        <div class="cta-links">
-            <a href="../" class="cta-primary">Open Interactive Visualizer</a>
-            <a href="https://markellr-redhat.github.io/llm-d-content-hub/" class="cta-secondary">Explore the Content Hub</a>
+    <div class="stat-grid">
+        <div class="stat-box">
+            <div class="stat-value">1:N</div>
+            <div class="stat-label">User request to inference call ratio</div>
         </div>
+        <div class="stat-box">
+            <div class="stat-value">3-25x</div>
+            <div class="stat-label">Typical amplification range</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">5x</div>
+            <div class="stat-label">Parallel burst factor</div>
+        </div>
+    </div>
+
+    <h3>Burst Patterns in Agentic Workloads</h3>
+
+    <p>
+        The burstiness problem is compounded by the fact that agents often generate <strong>parallel bursts</strong> of inference requests. When a research agent decides to search five different sources simultaneously, it fires off five inference calls at once. When a code agent needs to analyze three different files before deciding on a fix, it may kick off three parallel analysis calls. These bursts are sudden, short-lived, and intense.
+    </p>
+
+    <p>
+        The burst pattern also exhibits temporal correlation. If your platform serves 100 concurrent users and each user triggers an agent, those 100 agents do not neatly stagger their inference calls. They tend to cluster: many agents will be in their "tool-calling" phase simultaneously, generating parallel bursts that stack on top of each other. The result is a traffic pattern that looks less like a steady stream and more like a series of sharp spikes separated by relative calm.
+    </p>
+
+    <p>
+        Traditional autoscaling cannot handle these bursts effectively. Kubernetes HPA (Horizontal Pod Autoscaler) typically operates on a 15&ndash;60 second observation window, and spinning up a new vLLM pod takes 30&ndash;120 seconds (model loading alone can take 30+ seconds on large models, and that is before the GPU memory is allocated and the model weights are transferred). By the time the autoscaler detects the burst and provisions new capacity, the burst is already over. The new pods sit idle, costing money, while the next burst hits the existing pods that are still recovering from the previous one.
+    </p>
+
+    <h3>How llm-d's Load-Aware Routing Helps Absorb Bursts</h3>
+
+    <p>
+        llm-d addresses the burst problem through <strong>load-aware routing</strong> that operates at the request level, not the pod level. When a burst of requests arrives, llm-d's EPP evaluates the current queue depth and active request count on every pod in real time. It routes requests to pods with available capacity, spreading the burst across the cluster without relying on autoscaling to provision new resources.
+    </p>
+
+    <p>
+        Crucially, llm-d's cache-awareness and load-awareness work together as a unified cost function rather than competing priorities. The EPP does not blindly route all requests from a cache-sharing prefix to the same pod if that pod is overloaded. It implements a dynamic cost model that balances the compute savings of cache reuse against the queuing delay of routing to a busy pod. If the cache-holding pod's queue depth exceeds a configurable threshold, the EPP will route the request to a less-loaded pod and accept the cache miss, knowing that the queuing delay would have exceeded the cache recomputation cost anyway.
+    </p>
+
+    <div class="concept-card">
+        <div class="card-label">Design Principle</div>
+        <h4>Cache Affinity Is Not Stickiness at All Costs</h4>
+        <p>
+            A naive cache-aware router would always send requests to the pod with the cached prefix, even if that pod has 50 requests queued. llm-d is smarter: it models the trade-off between cache recomputation time (hundreds of milliseconds) and queuing delay (potentially seconds) and makes a dynamic routing decision for every request. When the cluster is lightly loaded, cache affinity dominates. When the cluster is heavily loaded, load balancing dominates. The EPP smoothly transitions between these modes based on real-time cluster state.
+        </p>
+    </div>
+
+    <p>
+        This dynamic balancing is especially important during burst scenarios. When five parallel agent calls arrive simultaneously, the first one or two might route to the cache-holding pod. But if calls three through five would queue behind them, llm-d routes them to other pods with available capacity. Those calls pay a higher prefill cost, but they start executing immediately instead of waiting in a queue. The net result is lower end-to-end latency for the agent's parallel burst, even though individual cache hit rates are lower.
+    </p>
+
+    <p>
+        llm-d also provides metrics and signals that external autoscalers can use to make better scaling decisions. By exposing per-pod queue depths, cache utilization ratios, and request arrival rates through its metrics endpoints, llm-d gives the autoscaler a richer picture of cluster state than simple CPU or memory utilization. A custom autoscaler that integrates with llm-d's metrics can anticipate capacity needs based on the number of active agent sessions and their historical amplification factors, rather than reacting to pod resource utilization after the fact. This predictive approach to scaling is far more effective for bursty agentic workloads than reactive HPA rules.
+    </p>
+
+    <!-- Section 8: Production Patterns -->
+    <h2 id="production">Production Patterns for Agentic Inference</h2>
+
+    <p>
+        Deploying llm-d for agentic workloads in production requires more than just enabling cache-aware routing. The following patterns represent hard-won lessons from operating agentic inference at scale, and they apply whether you are serving dozens or thousands of concurrent agents.
+    </p>
+
+    <h3>Connection Pooling for Agent-to-Inference Communication</h3>
+
+    <p>
+        AI agents are chatty. An agent making 8+ inference calls per execution should not be opening and closing HTTP connections for each call. Connection pooling between the agent runtime and the llm-d ingress is essential. Without it, TCP handshake and TLS negotiation overhead adds 5&ndash;20ms per call&mdash;a cost that compounds across the agent's call chain just like prefill latency does.
+    </p>
+
+    <p>
+        The recommended pattern is to maintain a pool of persistent HTTP/2 connections between each agent runtime pod and the llm-d routing layer. HTTP/2's multiplexing allows multiple inference requests to fly concurrently over the same connection, which is critical for agents that make parallel tool calls. Configure the pool size based on the maximum concurrent inference requests per agent runtime pod, typically 10&ndash;50 connections for a pod running 20&ndash;100 concurrent agent executions. Monitor connection utilization to right-size the pool: too few connections causes head-of-line blocking on parallel bursts; too many wastes kernel resources on idle sockets.
+    </p>
+
+    <h3>Request Coalescing: Batching Shared-Prefix Calls</h3>
+
+    <p>
+        When multiple agents share the same prefix and send inference requests at roughly the same time, llm-d can <strong>coalesce</strong> these requests into a single prefill computation. Instead of computing the KV cache for the shared prefix once per request, the router identifies requests with matching prefixes within a short time window (typically 10&ndash;50ms) and batches their prefill computation on the same pod. Each request still gets its own completion, but the shared prefix is computed only once and the resulting KV cache is shared across all requests in the batch.
+    </p>
+
+    <p>
+        Request coalescing is most effective in multi-tenant platforms where many agents share the same tool definitions. If 20 requests with the same 800-token tool definition prefix arrive within a 30ms window, coalescing reduces the prefill compute for those 20 requests by 95%: the prefix is computed once and the 20 unique suffixes are batched together for efficient GPU utilization. This is conceptually similar to how vLLM's continuous batching works at the generation level, extended to the routing and prefill layers by llm-d.
+    </p>
+
+    <h3>Priority Queues: Differentiating Interactive and Background Calls</h3>
+
+    <p>
+        Not all inference calls within an agent execution are equally urgent. The final response to the user is latency-sensitive&mdash;the user is actively waiting. But intermediate tool-call decisions, background reasoning steps, and self-verification checks are less time-critical. Production agentic systems should tag their inference requests with priority levels, and llm-d should route accordingly.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label">Priority Queue Strategy</div>
+        <p>
+            <strong>P0 (Critical):</strong> Final user-facing response generation. Route to lowest-queue-depth pod, even if it means a cache miss. Target TTFT: &lt;100ms.<br>
+            <strong>P1 (Interactive):</strong> Tool-call decision steps where the user is actively waiting. Prefer cache-aware routing but accept load-based fallback. Target TTFT: &lt;200ms.<br>
+            <strong>P2 (Background):</strong> Self-verification, logging summaries, pre-emptive caching. Route to cache-holding pod regardless of queue depth. Target TTFT: &lt;2s acceptable.
+        </p>
+    </div>
+
+    <p>
+        llm-d's EPP can incorporate request priority into its routing cost function. High-priority requests weight queue depth more heavily in the cost model (because waiting is unacceptable), while low-priority requests weight cache affinity more heavily (because cache recomputation is wasteful when there is no user waiting). This differentiation allows the cluster to serve latency-sensitive interactive requests with minimal delay while still maximizing cache utilization for background work that can tolerate higher latency.
+    </p>
+
+    <h3>Circuit Breaking: Handling Cache Thrashing</h3>
+
+    <p>
+        Cache thrashing occurs when a pod's KV cache is constantly being evicted and recomputed due to memory pressure from too many concurrent sessions. This creates a pathological feedback loop: llm-d routes requests to the pod because it ostensibly "has" the cache, but the cache has actually been evicted by the time the request is processed, so the request pays the full prefill cost <em>plus</em> the queuing delay from being routed to a specific pod instead of the least-loaded one. The user gets the worst of both worlds: cache-miss latency with affinity-routing overhead.
+    </p>
+
+    <p>
+        The solution is circuit breaking at the cache level. llm-d monitors each pod's cache hit rate in real time. When a pod's cache hit rate drops below a configurable threshold (for example, below 40% over the last 60 seconds), llm-d's EPP marks that pod as "cache-degraded" and stops routing cache-affinity requests to it. Instead, it falls back to pure load-based routing for that pod until the cache hit rate recovers above a recovery threshold (for example, 60%). This prevents the pathological feedback loop and ensures that cache-aware routing only kicks in when it actually provides a measurable benefit.
+    </p>
+
+    <p>
+        Implementing this requires the vLLM backends to expose cache statistics to the EPP&mdash;specifically, the number of cache hits versus misses over a rolling window. llm-d's health-check protocol includes these metrics, allowing the EPP to make informed circuit-breaking decisions without adding latency to the critical request path.
+    </p>
+
+    <h3>Graceful Degradation: When All Pods Are Cold</h3>
+
+    <p>
+        There are scenarios where cache-aware routing provides no benefit: cluster cold starts after a deployment, scaling events that bring up new pods with empty caches, or traffic spikes that exceed the cluster's total cache capacity. In these cases, llm-d must degrade gracefully to pure load-based routing without introducing additional latency from cache-lookup overhead.
+    </p>
+
+    <p>
+        llm-d's EPP implements a fast-path check: if no pod in the cluster reports a cache entry matching the request's prefix hash, the EPP skips the cache-aware routing logic entirely and routes based on load metrics alone. This fast-path avoids the overhead of searching for a cache match that does not exist, keeping the "all-cold" routing performance equivalent to a standard load balancer. As pods warm up and cache entries accumulate, the EPP automatically transitions back to cache-aware routing without any manual intervention or configuration change.
+    </p>
+
+    <p>
+        The graceful degradation strategy also applies at the prefix level. If a new agent type is deployed with a novel system prompt that no pod has cached yet, llm-d treats its first request as a load-balanced cold start and begins building cache affinity from that point forward. Within seconds of the first request, the new prefix is cached and subsequent requests benefit from cache-aware routing. The transition is seamless, automatic, and invisible to the agent application. This "warm on first use" behavior means that deploying new agent types or updating system prompts does not require any cache pre-warming steps&mdash;llm-d handles it as part of normal request processing.
+    </p>
+
+    <hr>
+
+    <!-- Conclusion -->
+    <h2>Conclusion: The Infrastructure Agentic AI Demands</h2>
+
+    <p>
+        Agentic workloads are not a future possibility; they are a present reality. Every major AI platform is shipping agent capabilities, and the inference traffic patterns are shifting from single-shot completions to multi-step, tool-augmented reasoning chains. This shift exposes a fundamental inefficiency in traditional inference routing: the repeated recomputation of shared prefixes across an agent's call chain.
+    </p>
+
+    <p>
+        llm-d addresses this inefficiency at the routing layer, where it belongs. By maintaining awareness of which pods have cached which prefixes, and by intelligently routing requests to maximize cache reuse while respecting load constraints, llm-d eliminates up to 75% of prefill latency in agentic workloads. The savings compound across multi-turn conversations, multiply across multi-agent platforms, and scale with the growing adoption of standardized tool protocols like MCP.
+    </p>
+
+    <p>
+        The numbers are clear: for an agent making 8 inference calls per execution, llm-d reduces total prefill time from 3.75 seconds to around 1.1 seconds. At 1,000 concurrent agents, that translates to nearly 44 GPUs' worth of freed compute per minute. As agent complexity grows&mdash;more tools, longer conversations, more sophisticated multi-step reasoning&mdash;the savings only increase.
+    </p>
+
+    <p>
+        The agentic era demands inference infrastructure that understands the structure of its workloads. Random routing treats every request as independent. Cache-aware routing recognizes that in agentic systems, requests are deeply correlated&mdash;sharing prefixes, sharing sessions, sharing tool definitions. llm-d is built from the ground up to exploit these correlations, and that is why agentic workloads are its killer app.
+    </p>
+
+    <div class="cta-block">
+        <h3>Explore the Interactive Visualizer</h3>
+        <p>
+            See how llm-d's KV cache-aware routing works in real time with our interactive visualization. Watch requests flow through the EPP, observe cache hits and misses, and experiment with different agent configurations.
+        </p>
+        <a href="../" class="btn">Open Interactive Visualizer</a>
+    </div>
+
+    <div class="callout">
+        <p>
+            <strong>llm-d</strong> is a CNCF Sandbox project for distributed LLM inference routing. It is open source and designed for production Kubernetes deployments with vLLM backends. Learn more at the <a href="https://github.com/llm-d" target="_blank" rel="noopener">llm-d GitHub organization</a>.
+        </p>
     </div>
 
 </article>
 
-<nav class="bottom-nav">
-    <a href="https://markellr-redhat.github.io/llm-d-content-hub/">Back to Content Hub</a>
-    <a href="../">Open Interactive Visualizer</a>
-</nav>
-
-<div class="footer-attribution">
-    <span class="name">Markell Rawls</span> &middot; Developer Advocate &middot; Red Hat
-</div>
+<footer>
+    <div class="footer-inner">
+        <div class="footer-author">
+            Written by <strong>Markell Rawls</strong> &mdash; AI Evangelist, Red Hat
+        </div>
+        <div class="footer-cncf">
+            llm-d is a CNCF Sandbox project
+        </div>
+    </div>
+</footer>
 
 </body>
 </html>

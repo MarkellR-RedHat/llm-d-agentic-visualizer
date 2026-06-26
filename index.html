@@ -3,37 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agentic Demand Visualizer | llm-d</title>
+<title>Agentic Routing Visualizer | llm-d</title>
+<meta name="description" content="APM-style tracing visualization for llm-d agentic inference routing. See how KV cache-aware scheduling reduces TTFT for AI agent workloads.">
 <link rel="icon" type="image/png" href="https://llm-d.ai/img/llm-d-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500;700&family=Red+Hat+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ================================================================
-   AGENTIC DEMAND VISUALIZER
-   Air-traffic-control / mission-control aesthetic
+   AGENTIC ROUTING VISUALIZER - Content 16
+   APM/Tracing-style visualization for llm-d
    ================================================================ */
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #0a0e1a;
-  --bg-card: rgba(14, 18, 32, 0.92);
-  --border: rgba(0, 212, 255, 0.12);
-  --border-dim: rgba(0, 212, 255, 0.06);
-  --cyan: #00d4ff;
-  --green: #00ff88;
-  --red: #ff4455;
-  --amber: #ffaa00;
-  --text: #e0e6f0;
-  --text-dim: #6b7a99;
-  --text-bright: #ffffff;
+  --bg: #0a0e17;
+  --bg-card: rgba(15, 20, 35, 0.95);
+  --bg-card-solid: #0f1423;
+  --border: rgba(59, 130, 246, 0.15);
+  --border-bright: rgba(59, 130, 246, 0.35);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59, 130, 246, 0.08);
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.12);
+  --red: #ef4444;
+  --red-dim: rgba(239, 68, 68, 0.12);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245, 158, 11, 0.12);
+  --cyan: #06b6d4;
+  --purple: #a855f7;
+  --text: #e2e8f0;
+  --text-dim: #64748b;
+  --text-bright: #f8fafc;
   --font-display: 'Red Hat Display', sans-serif;
   --font-text: 'Red Hat Text', sans-serif;
   --font-mono: 'Red Hat Mono', 'Consolas', monospace;
 }
 
-html { font-size: 14px; }
+html { font-size: 14px; scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-text);
@@ -50,7 +58,7 @@ body::after {
   inset: 0;
   background: repeating-linear-gradient(
     0deg, transparent, transparent 2px,
-    rgba(0, 0, 0, 0.025) 2px, rgba(0, 0, 0, 0.025) 4px
+    rgba(0, 0, 0, 0.015) 2px, rgba(0, 0, 0, 0.015) 4px
   );
   pointer-events: none;
   z-index: 9999;
@@ -62,223 +70,597 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
+    linear-gradient(rgba(59, 130, 246, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
   pointer-events: none;
   z-index: 0;
 }
 
-/* ── Top accent line ─────────────────────────────────── */
+/* ── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.35); }
+
+/* ── Top accent line ────────────────────────────────── */
 .top-accent {
   height: 2px;
-  background: linear-gradient(90deg, var(--cyan), #7f52ff, var(--cyan));
-  opacity: 0.7;
+  background: linear-gradient(90deg, var(--blue), var(--purple), var(--blue));
+  opacity: 0.6;
 }
 
-/* ── Header ──────────────────────────────────────────── */
+/* ── Header ─────────────────────────────────────────── */
 header {
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 32px;
-  border-bottom: 1px solid var(--border-dim);
-  background: rgba(10, 14, 26, 0.95);
-  backdrop-filter: blur(8px);
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 14, 23, 0.97);
+  backdrop-filter: blur(12px);
 }
 
 .hdr-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .hdr-left img {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
 }
 
 .hdr-left h1 {
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   font-weight: 900;
   color: var(--text-bright);
   letter-spacing: -0.01em;
 }
 
 .hdr-left .sub {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--text-dim);
-  margin-top: 2px;
+  margin-top: 1px;
+  font-family: var(--font-mono);
 }
 
 .hdr-right {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   align-items: center;
 }
 
-.hdr-right a {
-  color: var(--cyan);
+.hdr-link {
+  color: var(--text-dim);
   text-decoration: none;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   transition: all 0.2s;
 }
 
-.hdr-right a:hover {
-  background: rgba(0, 212, 255, 0.08);
-  border-color: var(--cyan);
+.hdr-link:hover {
+  background: var(--blue-dim);
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
-/* ── Scenario bar ────────────────────────────────────── */
-.scenario-bar {
+/* ── Mode Tabs ──────────────────────────────────────── */
+.mode-tabs {
   position: relative;
-  z-index: 1;
+  z-index: 10;
   display: flex;
-  gap: 10px;
-  padding: 16px 32px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--border-dim);
-  background: rgba(10, 14, 26, 0.9);
+  gap: 0;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 14, 23, 0.95);
 }
 
-.scenario-btn {
+.mode-tab {
   font-family: var(--font-text);
   font-size: 0.82rem;
-  font-weight: 500;
-  padding: 8px 20px;
-  border-radius: 100px;
-  border: 1px solid var(--border);
+  font-weight: 600;
+  padding: 12px 22px;
+  border: none;
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
+  position: relative;
   white-space: nowrap;
 }
 
-.scenario-btn:hover {
-  border-color: var(--cyan);
+.mode-tab:hover {
   color: var(--text);
+  background: var(--blue-dim);
 }
 
-.scenario-btn.active {
-  background: rgba(0, 212, 255, 0.1);
-  border-color: var(--cyan);
-  color: var(--cyan);
-  box-shadow: 0 0 14px rgba(0, 212, 255, 0.15);
+.mode-tab.active {
+  color: var(--blue);
 }
 
-.scenario-desc {
+.mode-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--blue);
+  border-radius: 2px 2px 0 0;
+}
+
+/* ── Metrics Dashboard (always visible) ─────────────── */
+.metrics-bar {
   position: relative;
-  z-index: 1;
-  padding: 8px 32px 12px;
-  font-size: 0.78rem;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 14, 23, 0.95);
+}
+
+.metric-cell {
+  text-align: center;
+  padding: 12px 8px;
+  border-right: 1px solid var(--border);
+}
+
+.metric-cell:last-child { border-right: none; }
+
+.metric-cell .mc-label {
+  font-size: 0.65rem;
   color: var(--text-dim);
-  border-bottom: 1px solid var(--border-dim);
-  background: rgba(10, 14, 26, 0.9);
-  min-height: 32px;
-  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
 }
 
-/* ── Controls ────────────────────────────────────────── */
-.controls {
+.metric-cell .mc-val {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.metric-cell .mc-sub {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  font-family: var(--font-mono);
+}
+
+.mc-val.good { color: var(--green); }
+.mc-val.warn { color: var(--amber); }
+.mc-val.bad { color: var(--red); }
+
+/* ── Main content area ──────────────────────────────── */
+.main-content {
   position: relative;
   z-index: 1;
-  display: flex;
-  gap: 10px;
-  padding: 10px 32px;
-  align-items: center;
-  background: rgba(10, 14, 26, 0.9);
-  border-bottom: 1px solid var(--border-dim);
+  min-height: calc(100vh - 300px);
 }
 
-.ctrl-btn {
-  font-family: var(--font-text);
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 6px 16px;
-  border-radius: 6px;
+.mode-panel {
+  display: none;
+  padding: 20px 28px;
+}
+
+.mode-panel.active { display: block; }
+
+/* ── Trace View ─────────────────────────────────────── */
+.trace-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  min-height: 600px;
+}
+
+.trace-main {
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  background: rgba(0, 212, 255, 0.06);
-  color: var(--cyan);
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 700px;
+}
+
+.trace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.trace-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-bright);
+}
+
+.trace-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.trace-btn {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--blue-dim);
+  color: var(--blue);
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.ctrl-btn:hover {
-  background: rgba(0, 212, 255, 0.15);
-}
+.trace-btn:hover { background: rgba(59,130,246,0.15); border-color: var(--blue); }
+.trace-btn.active { background: rgba(59,130,246,0.2); box-shadow: 0 0 8px rgba(59,130,246,0.2); }
 
-.ctrl-btn.active {
-  background: rgba(0, 212, 255, 0.2);
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
-}
-
-.speed-label {
-  font-size: 0.72rem;
+/* Trace info line */
+.trace-info {
+  display: flex;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   color: var(--text-dim);
-  margin-left: 14px;
+  margin-bottom: 12px;
 }
 
-.speed-slider {
-  width: 100px;
-  accent-color: var(--cyan);
-}
+.trace-info span { display: flex; gap: 4px; align-items: center; }
+.trace-info .ti-val { color: var(--text); }
 
-/* ── Main comparison grid ────────────────────────────── */
-.main {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  min-height: 480px;
-}
-
-.panel {
-  padding: 16px;
+/* Timeline ruler */
+.timeline-ruler {
+  display: flex;
+  align-items: center;
+  padding: 4px 0 4px 180px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
   position: relative;
 }
 
-.panel:first-child {
-  border-right: 1px solid var(--border-dim);
+.ruler-marks {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  position: relative;
+  height: 14px;
+  border-left: 1px solid rgba(59,130,246,0.1);
 }
 
-.panel-title {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 10px;
-  padding: 8px 16px;
-  border-radius: 8px;
+.ruler-marks span {
+  position: relative;
+}
+
+.ruler-marks span::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -4px;
+  width: 1px;
+  height: 6px;
+  background: rgba(59,130,246,0.2);
+}
+
+/* Trace spans */
+.trace-spans { position: relative; }
+
+.trace-span {
+  display: flex;
+  align-items: center;
+  padding: 3px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+  min-height: 30px;
+}
+
+.trace-span:hover { background: rgba(59,130,246,0.04); }
+.trace-span.selected { background: rgba(59,130,246,0.08); }
+
+.span-label {
+  width: 180px;
+  min-width: 180px;
+  padding-right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.span-indent {
+  display: inline-block;
+  width: 16px;
+  min-width: 16px;
+  border-left: 1px solid rgba(59,130,246,0.15);
+  height: 24px;
+  margin-right: 4px;
+}
+
+.span-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  font-size: 0.55rem;
+  flex-shrink: 0;
 }
 
-.panel-naive .panel-title {
-  color: var(--red);
-  background: rgba(255, 68, 85, 0.08);
-  border: 1px solid rgba(255, 68, 85, 0.15);
+.span-name {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.panel-llmd .panel-title {
-  color: var(--green);
-  background: rgba(0, 255, 136, 0.08);
-  border: 1px solid rgba(0, 255, 136, 0.15);
+.span-bar-area {
+  flex: 1;
+  position: relative;
+  height: 22px;
 }
 
-.panel-badge {
+.span-bar {
+  position: absolute;
+  height: 18px;
+  top: 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.3s;
+  min-width: 2px;
+}
+
+.span-bar.cache-hit { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.3); }
+.span-bar.cache-miss { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.3); }
+.span-bar.cache-partial { background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.3); }
+.span-bar.tool-exec { background: var(--purple); box-shadow: 0 0 8px rgba(168,85,247,0.3); }
+.span-bar.mcp-call { background: var(--cyan); box-shadow: 0 0 8px rgba(6,182,212,0.3); }
+
+.span-bar-timing {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  position: absolute;
+  right: -48px;
+  white-space: nowrap;
+}
+
+/* Span animation */
+@keyframes spanAppear {
+  from { opacity: 0; transform: scaleX(0); transform-origin: left; }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+.span-bar.animating {
+  animation: spanAppear 0.4s ease-out forwards;
+}
+
+/* ── Detail Panel ───────────────────────────────────── */
+.detail-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 700px;
+}
+
+.detail-panel h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-bright);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.detail-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Pod score table */
+.pod-scores {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.pod-scores th {
+  text-align: left;
+  color: var(--text-dim);
+  font-weight: 500;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
   font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pod-scores td {
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(59,130,246,0.06);
+  color: var(--text);
+}
+
+.pod-scores tr.selected-pod td {
+  background: rgba(59,130,246,0.08);
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.pod-scores .score-bar-cell {
+  width: 80px;
+}
+
+.score-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(59,130,246,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+/* Prefix hash display */
+.prefix-hash {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: rgba(59,130,246,0.06);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+.prefix-hash .ph-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.prefix-hash .ph-label { color: var(--text-dim); }
+.prefix-hash .ph-val { color: var(--text); }
+.prefix-hash .ph-val.match { color: var(--green); }
+
+/* Latency breakdown */
+.latency-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.lat-label {
+  width: 100px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.lat-bar-bg {
+  flex: 1;
+  height: 10px;
+  background: rgba(59,130,246,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.lat-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s;
+}
+
+.lat-bar-fill.prefill { background: var(--green); }
+.lat-bar-fill.queue { background: var(--amber); }
+.lat-bar-fill.decode { background: var(--blue); }
+.lat-bar-fill.total { background: var(--purple); }
+
+.lat-val {
+  width: 55px;
+  text-align: right;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+/* ── Comparison Mode ────────────────────────────────── */
+.comparison-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.comparison-side {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 660px;
+}
+
+.comparison-side .side-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.side-without .side-title {
+  color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid rgba(239,68,68,0.2);
+}
+
+.side-with .side-title {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(34,197,94,0.2);
+}
+
+.side-badge {
+  font-size: 0.58rem;
   font-weight: 500;
   padding: 2px 8px;
   border-radius: 100px;
@@ -286,163 +668,524 @@ header {
   letter-spacing: 0.05em;
 }
 
-.panel-naive .panel-badge {
-  background: rgba(255, 68, 85, 0.12);
-  border: 1px solid rgba(255, 68, 85, 0.25);
-  color: var(--red);
-}
+.side-without .side-badge { background: var(--red-dim); border: 1px solid rgba(239,68,68,0.25); color: var(--red); }
+.side-with .side-badge { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.25); color: var(--green); }
 
-.panel-llmd .panel-badge {
-  background: rgba(0, 255, 136, 0.08);
-  border: 1px solid rgba(0, 255, 136, 0.2);
-  color: var(--green);
-}
-
-.canvas-wrap {
-  position: relative;
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  background: radial-gradient(ellipse at center, rgba(0, 212, 255, 0.03), transparent 70%);
-  border: 1px solid var(--border-dim);
-}
-
-canvas {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/* ── Pod metrics ─────────────────────────────────────── */
-.pod-metrics {
+.comparison-metrics {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-top: 10px;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
 }
 
-.pod-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-dim);
+.cmp-metric {
+  background: rgba(10,14,23,0.8);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 8px;
+  padding: 10px;
   text-align: center;
 }
 
-.pod-card .pod-name {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
+.cmp-metric .cm-label {
+  font-size: 0.62rem;
   color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   margin-bottom: 4px;
 }
 
-.pod-card .metric {
+.cmp-metric .cm-val {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  margin: 2px 0;
-}
-
-.pod-card .metric .val {
+  font-size: 1rem;
   font-weight: 700;
 }
 
-.metric-label {
+/* Bar chart comparison */
+.bar-chart {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.bar-chart-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.bar-step-label {
+  width: 80px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-bg {
+  flex: 1;
+  height: 14px;
+  background: rgba(59,130,246,0.04);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease-out;
+}
+
+.bar-val {
+  width: 50px;
+  text-align: right;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+/* ── Multi-Agent Mode ───────────────────────────────── */
+.multi-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.multi-top {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+}
+
+.multi-cluster {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.cluster-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-bright);
+  margin-bottom: 12px;
+}
+
+.pod-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.pod-node {
+  background: rgba(10,14,23,0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.pod-node.active {
+  border-color: var(--blue);
+  box-shadow: 0 0 12px rgba(59,130,246,0.15);
+}
+
+.pod-node .pn-name {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.pod-node .pn-cache {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.pod-node .pn-queue {
+  font-family: var(--font-mono);
   font-size: 0.62rem;
   color: var(--text-dim);
 }
 
-/* ── Aggregate bar ───────────────────────────────────── */
-.agg-bar {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  border-top: 1px solid var(--border-dim);
-  background: rgba(10, 14, 26, 0.95);
+.pod-node .pn-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 0 0 8px 8px;
 }
 
-.agg-side {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  padding: 14px 16px;
+.agent-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
 }
 
-.agg-side:first-child {
-  border-right: 1px solid var(--border-dim);
+.agent-lane {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(10,14,23,0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
-.agg-item {
-  text-align: center;
-  padding: 4px;
-}
-
-.agg-item .agg-val {
+.agent-lane .al-badge {
   font-family: var(--font-mono);
-  font-size: 1.1rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.agent-lane .al-status {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.agent-lane .al-ttft {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
-.agg-item .agg-label {
-  font-size: 0.65rem;
-  color: var(--text-dim);
-  margin-top: 2px;
+.multi-sidebar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
-.agg-naive .agg-val { color: var(--red); }
-.agg-llmd .agg-val { color: var(--green); }
+.cache-sharing-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-bright);
+  margin-bottom: 10px;
+}
 
-/* ── Footer ──────────────────────────────────────────── */
+.cache-share-item {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: rgba(10,14,23,0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.cache-share-item .cs-prefix {
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.cache-share-item .cs-agents {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cs-agent-tag {
+  font-size: 0.58rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* ── Agent Builder ──────────────────────────────────── */
+.builder-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 16px;
+}
+
+.builder-config {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.builder-config h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-bright);
+  margin-bottom: 14px;
+}
+
+.builder-field {
+  margin-bottom: 14px;
+}
+
+.builder-field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.builder-field select {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(10,14,23,0.8);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%2364748b' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.builder-field select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.tool-checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.tool-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(10,14,23,0.6);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tool-check:hover { border-color: var(--blue); }
+
+.tool-check input[type="checkbox"] {
+  accent-color: var(--blue);
+  width: 14px;
+  height: 14px;
+}
+
+.tool-check span {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text);
+}
+
+.builder-run-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+  background: rgba(59,130,246,0.12);
+  color: var(--blue);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 6px;
+}
+
+.builder-run-btn:hover {
+  background: rgba(59,130,246,0.22);
+  box-shadow: 0 0 16px rgba(59,130,246,0.2);
+}
+
+.builder-result {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 660px;
+}
+
+.workflow-steps {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  padding: 10px;
+  background: rgba(10,14,23,0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.workflow-steps .ws-step {
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-step .ws-num {
+  color: var(--blue);
+  font-weight: 700;
+  width: 16px;
+}
+
+/* ── MCP Section ────────────────────────────────────── */
+.mcp-section {
+  margin-top: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.mcp-section h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-bright);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mcp-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(10,14,23,0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.mcp-node {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.mcp-arrow {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+/* ── Footer ─────────────────────────────────────────── */
 footer {
   position: relative;
   z-index: 1;
-  padding: 20px 32px;
+  padding: 20px 28px;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-dim);
-  border-top: 1px solid var(--border-dim);
-  background: rgba(10, 14, 26, 0.95);
+  border-top: 1px solid var(--border);
+  background: rgba(10, 14, 23, 0.95);
   line-height: 1.8;
+  margin-top: 30px;
 }
 
 footer a {
-  color: var(--cyan);
+  color: var(--blue);
   text-decoration: none;
 }
 
-footer a:hover {
-  text-decoration: underline;
-}
+footer a:hover { text-decoration: underline; }
 
 .footer-links {
   display: flex;
   gap: 20px;
   justify-content: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 
 .cncf-note {
-  font-size: 0.68rem;
-  color: rgba(107, 122, 153, 0.6);
+  font-size: 0.65rem;
+  color: rgba(100, 116, 139, 0.5);
   margin-top: 6px;
 }
 
-/* ── Responsive ──────────────────────────────────────── */
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .trace-layout { grid-template-columns: 1fr; }
+  .detail-panel { max-height: 400px; }
+  .multi-top { grid-template-columns: 1fr; }
+  .builder-layout { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 900px) {
-  .main { grid-template-columns: 1fr; }
-  .panel:first-child { border-right: none; border-bottom: 1px solid var(--border-dim); }
-  .agg-bar { grid-template-columns: 1fr; }
-  .agg-side:first-child { border-right: none; border-bottom: 1px solid var(--border-dim); }
+  .comparison-layout { grid-template-columns: 1fr; }
   header { flex-direction: column; gap: 10px; text-align: center; }
-  .scenario-bar { justify-content: center; }
+  .hdr-right { justify-content: center; }
+  .metrics-bar { grid-template-columns: repeat(3, 1fr); }
+  .metric-cell:nth-child(4), .metric-cell:nth-child(5) { display: none; }
+  .pod-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 600px) {
-  .pod-metrics { grid-template-columns: repeat(2, 1fr); }
-  .agg-side { grid-template-columns: repeat(2, 1fr); }
+  .mode-tabs { overflow-x: auto; }
+  .mode-tab { padding: 10px 14px; font-size: 0.75rem; }
+  .metrics-bar { grid-template-columns: repeat(2, 1fr); }
+  .metric-cell:nth-child(3) { display: none; }
 }
+
+/* ── Utility ────────────────────────────────────────── */
+.tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; }
+.tag-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+.tag-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+.tag-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
+.tag-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,130,246,0.25); }
+.tag-purple { background: rgba(168,85,247,0.1); color: var(--purple); border: 1px solid rgba(168,85,247,0.25); }
+.tag-cyan { background: rgba(6,182,212,0.1); color: var(--cyan); border: 1px solid rgba(6,182,212,0.25); }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.empty-state .es-icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.3; }
 </style>
 </head>
 <body>
@@ -452,56 +1195,167 @@ footer a:hover {
   <div class="hdr-left">
     <img src="https://llm-d.ai/img/llm-d-icon.png" alt="llm-d">
     <div>
-      <h1>Agentic Demand Visualizer</h1>
-      <div class="sub">AI Agent Inference Routing -- Side-by-Side Comparison</div>
+      <h1>Agentic Routing Visualizer</h1>
+      <div class="sub">Content 16 // llm-d Inference Tracing</div>
     </div>
   </div>
   <div class="hdr-right">
-    <a href="blog/">Blog</a>
-    <a href="https://markellr-redhat.github.io/llm-d-content-hub/">Content Hub</a>
-    <a href="https://llm-d.ai" target="_blank" rel="noopener">llm-d.ai</a>
+    <a class="hdr-link" href="blog/">Blog</a>
+    <a class="hdr-link" href="https://markellr-redhat.github.io/llm-d-content-hub/">Content Hub</a>
+    <a class="hdr-link" href="https://llm-d.ai" target="_blank" rel="noopener">llm-d.ai</a>
   </div>
 </header>
 
-<div class="scenario-bar" id="scenarioBar">
-  <button class="scenario-btn active" data-scenario="multiturn">Multi-Turn Chat</button>
-  <button class="scenario-btn" data-scenario="toolchain">Tool-Calling Chain</button>
-  <button class="scenario-btn" data-scenario="burst">Burst Traffic</button>
-  <button class="scenario-btn" data-scenario="context">Context Switching</button>
-</div>
-<div class="scenario-desc" id="scenarioDesc">
-  Agent sends follow-up questions in conversation. Without llm-d, each turn hits a random pod with cold cache. With llm-d, sticky sessions keep the conversation on the same pod for cache hits.
+<div class="mode-tabs" id="modeTabs">
+  <button class="mode-tab active" data-mode="trace">Agent Trace</button>
+  <button class="mode-tab" data-mode="multi">Multi-Agent</button>
+  <button class="mode-tab" data-mode="builder">Agent Builder</button>
+  <button class="mode-tab" data-mode="comparison">Comparison</button>
 </div>
 
-<div class="controls">
-  <button class="ctrl-btn active" id="btnPlay" onclick="togglePlay()">PAUSE</button>
-  <button class="ctrl-btn" id="btnReset" onclick="resetSim()">RESET</button>
-  <span class="speed-label">Speed</span>
-  <input type="range" class="speed-slider" id="speedSlider" min="0.5" max="3" step="0.25" value="1">
+<div class="metrics-bar" id="metricsBar">
+  <div class="metric-cell"><div class="mc-label">Total Execution</div><div class="mc-val" id="metExecTime">--</div><div class="mc-sub" id="metExecSub">waiting</div></div>
+  <div class="metric-cell"><div class="mc-label">Cache Hit Rate</div><div class="mc-val" id="metCacheRate">--</div><div class="mc-sub" id="metCacheSub">--</div></div>
+  <div class="metric-cell"><div class="mc-label">Avg TTFT</div><div class="mc-val" id="metTTFT">--</div><div class="mc-sub" id="metTTFTSub">--</div></div>
+  <div class="metric-cell"><div class="mc-label">Throughput</div><div class="mc-val" id="metThroughput">--</div><div class="mc-sub">tokens/sec</div></div>
+  <div class="metric-cell"><div class="mc-label">Cost Savings</div><div class="mc-val good" id="metSavings">--</div><div class="mc-sub" id="metSavingsSub">vs random routing</div></div>
 </div>
 
-<div class="main">
-  <div class="panel panel-naive">
-    <div class="panel-title">
-      Naive Round-Robin
-      <span class="panel-badge">No Optimization</span>
+<div class="main-content">
+  <!-- AGENT TRACE MODE -->
+  <div class="mode-panel active" id="panel-trace">
+    <div class="trace-layout">
+      <div class="trace-main">
+        <div class="trace-header">
+          <div class="trace-title">Agent Execution Trace</div>
+          <div class="trace-controls">
+            <button class="trace-btn active" id="tracePlayBtn" onclick="toggleTracePlay()">PAUSE</button>
+            <button class="trace-btn" onclick="rerunTrace()">RERUN</button>
+          </div>
+        </div>
+        <div class="trace-info">
+          <span>Trace ID: <span class="ti-val" id="traceId">--</span></span>
+          <span>Agent: <span class="ti-val" id="traceAgent">Code Assistant</span></span>
+          <span>Steps: <span class="ti-val" id="traceSteps">0/0</span></span>
+          <span>Duration: <span class="ti-val" id="traceDuration">0ms</span></span>
+        </div>
+        <div class="timeline-ruler">
+          <div class="ruler-marks" id="rulerMarks"></div>
+        </div>
+        <div class="trace-spans" id="traceSpans"></div>
+      </div>
+      <div class="detail-panel" id="detailPanel">
+        <h3>Request Detail</h3>
+        <div class="empty-state"><div class="es-icon">||</div>Click any span to view EPP scoring, pod selection, and latency breakdown</div>
+      </div>
     </div>
-    <div class="canvas-wrap"><canvas id="cvNaive" width="600" height="420"></canvas></div>
-    <div class="pod-metrics" id="metricsNaive"></div>
-  </div>
-  <div class="panel panel-llmd">
-    <div class="panel-title">
-      llm-d Cache-Aware
-      <span class="panel-badge">Intelligent Routing</span>
-    </div>
-    <div class="canvas-wrap"><canvas id="cvLlmd" width="600" height="420"></canvas></div>
-    <div class="pod-metrics" id="metricsLlmd"></div>
-  </div>
-</div>
 
-<div class="agg-bar">
-  <div class="agg-side agg-naive" id="aggNaive"></div>
-  <div class="agg-side agg-llmd" id="aggLlmd"></div>
+    <div class="mcp-section">
+      <h3><span class="tag tag-cyan">MCP</span> Model Context Protocol Flow</h3>
+      <div class="mcp-flow" id="mcpFlow">
+        <div class="mcp-node" style="background:rgba(59,130,246,0.08);color:var(--blue);">Agent</div>
+        <div class="mcp-arrow">--&gt;</div>
+        <div class="mcp-node" style="background:rgba(6,182,212,0.08);color:var(--cyan);">MCP Client</div>
+        <div class="mcp-arrow">--&gt;</div>
+        <div class="mcp-node" style="background:rgba(168,85,247,0.08);color:var(--purple);">MCP Server (tool exec)</div>
+        <div class="mcp-arrow">--&gt;</div>
+        <div class="mcp-node" style="background:rgba(59,130,246,0.08);color:var(--blue);">LLM Call via llm-d</div>
+        <div class="mcp-arrow">--&gt;</div>
+        <div class="mcp-node" style="background:rgba(34,197,94,0.08);color:var(--green);">EPP: prefix cache match</div>
+        <div class="mcp-arrow">--&gt;</div>
+        <div class="mcp-node" style="background:rgba(34,197,94,0.08);color:var(--green);">vLLM Pod (cached)</div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);">MCP tool calls trigger LLM inference through llm-d. Subsequent tool calls share the same system prompt prefix, so EPP routes them to pods with warm KV cache.</div>
+    </div>
+  </div>
+
+  <!-- MULTI-AGENT MODE -->
+  <div class="mode-panel" id="panel-multi">
+    <div class="multi-layout">
+      <div class="multi-top">
+        <div class="multi-cluster">
+          <div class="cluster-title">llm-d Cluster -- 8 vLLM Pods</div>
+          <div class="pod-grid" id="multiPodGrid"></div>
+          <div class="agent-lanes" id="agentLanes"></div>
+        </div>
+        <div class="multi-sidebar">
+          <div class="cache-sharing-title">Cross-Agent Cache Sharing</div>
+          <div id="cacheSharingList"></div>
+          <div style="margin-top:12px;font-size:0.68rem;color:var(--text-dim);font-family:var(--font-mono);line-height:1.6;">
+            Agents sharing the same system prompt + tool definitions route to pods with warm KV cache. The EPP scores prefix hash matches across all active agents, enabling cross-agent cache reuse.
+          </div>
+        </div>
+      </div>
+      <div class="trace-controls" style="justify-content:center;margin-top:8px;">
+        <button class="trace-btn active" id="multiPlayBtn" onclick="toggleMultiPlay()">PAUSE</button>
+        <button class="trace-btn" onclick="resetMultiAgent()">RESET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT BUILDER MODE -->
+  <div class="mode-panel" id="panel-builder">
+    <div class="builder-layout">
+      <div class="builder-config">
+        <h3>Configure Agent</h3>
+        <div class="builder-field">
+          <label>System Prompt</label>
+          <select id="builderPrompt">
+            <option value="code">Code Assistant</option>
+            <option value="research">Research Agent</option>
+            <option value="support">Customer Support</option>
+          </select>
+        </div>
+        <div class="builder-field">
+          <label>Tools</label>
+          <div class="tool-checks">
+            <label class="tool-check"><input type="checkbox" value="web_search" checked><span>web_search</span></label>
+            <label class="tool-check"><input type="checkbox" value="code_exec" checked><span>code_exec</span></label>
+            <label class="tool-check"><input type="checkbox" value="database_query"><span>database_query</span></label>
+            <label class="tool-check"><input type="checkbox" value="file_read" checked><span>file_read</span></label>
+          </div>
+        </div>
+        <div class="builder-field">
+          <label>Workflow Preview</label>
+          <div class="workflow-steps" id="workflowPreview"></div>
+        </div>
+        <button class="builder-run-btn" onclick="runBuilderAgent()">Execute Agent Through llm-d</button>
+      </div>
+      <div class="builder-result">
+        <div class="trace-header">
+          <div class="trace-title">Builder Trace Output</div>
+          <div class="trace-controls">
+            <span class="trace-info"><span>Status: <span class="ti-val" id="builderStatus">Ready</span></span></span>
+          </div>
+        </div>
+        <div class="trace-spans" id="builderSpans">
+          <div class="empty-state"><div class="es-icon">&gt;_</div>Configure your agent and click Execute to watch it route through llm-d</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARISON MODE -->
+  <div class="mode-panel" id="panel-comparison">
+    <div class="trace-controls" style="justify-content:center;margin-bottom:14px;">
+      <button class="trace-btn active" id="cmpPlayBtn" onclick="toggleCmpPlay()">PAUSE</button>
+      <button class="trace-btn" onclick="rerunComparison()">RERUN</button>
+    </div>
+    <div class="comparison-layout">
+      <div class="comparison-side side-without">
+        <div class="side-title">Without llm-d <span class="side-badge">Random Routing</span></div>
+        <div class="trace-spans" id="cmpWithoutSpans"></div>
+        <div class="comparison-metrics" id="cmpWithoutMetrics"></div>
+        <div class="bar-chart"><div class="bar-chart-title">Latency per Step (ms)</div><div id="cmpWithoutBars"></div></div>
+      </div>
+      <div class="comparison-side side-with">
+        <div class="side-title">With llm-d <span class="side-badge">Cache-Aware EPP</span></div>
+        <div class="trace-spans" id="cmpWithSpans"></div>
+        <div class="comparison-metrics" id="cmpWithMetrics"></div>
+        <div class="bar-chart"><div class="bar-chart-title">Latency per Step (ms)</div><div id="cmpWithBars"></div></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <footer>
@@ -510,731 +1364,930 @@ footer a:hover {
     <a href="blog/">Blog</a>
     <a href="https://llm-d.ai" target="_blank" rel="noopener">llm-d.ai</a>
   </div>
-  <div>Markell Rawls &middot; Developer Advocate &middot; Red Hat</div>
+  <div>Markell Rawls &middot; AI Evangelist &middot; Red Hat</div>
   <div class="cncf-note">llm-d is a CNCF Sandbox project for distributed LLM inference routing</div>
 </footer>
 
 <script>
 // ================================================================
-// AGENTIC DEMAND VISUALIZER
-// Pure JavaScript -- single self-contained file
-// Air-traffic-control aesthetic with Canvas animation
+// AGENTIC ROUTING VISUALIZER
+// Single-file, self-contained JS -- APM/tracing-style UI
 // ================================================================
 
-// ── Scenario Configuration ──────────────────────────────────────
+// ── Utility ─────────────────────────────────────────────────────
 
-const SCENARIOS = {
-  multiturn: {
-    name: 'Multi-Turn Chat',
-    desc: 'Agent sends follow-up questions in conversation. Without llm-d, each turn hits a random pod with cold cache. With llm-d, sticky sessions keep the conversation on the same pod for cache hits.',
-    agentCount: 3,
-    agentLabels: ['Agent A', 'Agent B', 'Agent C'],
-    requestsPerWave: 3,
-    waves: 6,
-    waveDelay: 1800,
-    naive: { cacheHitProb: 0.05, stickyPods: false, queueBias: [1, 1, 1, 1] },
-    llmd:  { cacheHitProb: 0.92, stickyPods: true,  queueBias: [1, 1, 1, 1] }
-  },
-  toolchain: {
-    name: 'Tool-Calling Chain',
-    desc: 'Agent calls tools in sequence: search, analyze, summarize. Without llm-d, each step scatters to different pods losing context. With llm-d, prefix-aware routing keeps related steps on the same pod.',
-    agentCount: 3,
-    agentLabels: ['Search', 'Analyze', 'Summarize'],
-    requestsPerWave: 4,
-    waves: 5,
-    waveDelay: 1600,
-    naive: { cacheHitProb: 0.08, stickyPods: false, queueBias: [1, 1, 1, 1] },
-    llmd:  { cacheHitProb: 0.88, stickyPods: true,  queueBias: [1, 1, 1, 1] }
-  },
-  burst: {
-    name: 'Burst Traffic',
-    desc: '20 agents fire requests simultaneously. Without llm-d, random distribution overloads some pods while others idle. With llm-d, load-aware and cache-aware balancing distributes requests evenly.',
-    agentCount: 5,
-    agentLabels: ['Swarm 1', 'Swarm 2', 'Swarm 3', 'Swarm 4', 'Swarm 5'],
-    requestsPerWave: 20,
-    waves: 3,
-    waveDelay: 3000,
-    naive: { cacheHitProb: 0.06, stickyPods: false, queueBias: [3, 0.5, 2.5, 0.4] },
-    llmd:  { cacheHitProb: 0.75, stickyPods: false, queueBias: [1, 1, 1, 1] }
-  },
-  context: {
-    name: 'Context Switching',
-    desc: 'Agent switches between topics (code review, docs, testing). Without llm-d, no cache benefit anywhere. With llm-d, requests route back to pods that already have relevant context cached.',
-    agentCount: 3,
-    agentLabels: ['Topic A', 'Topic B', 'Topic C'],
-    requestsPerWave: 4,
-    waves: 5,
-    waveDelay: 1700,
-    naive: { cacheHitProb: 0.04, stickyPods: false, queueBias: [1, 1, 1, 1] },
-    llmd:  { cacheHitProb: 0.85, stickyPods: true,  queueBias: [1, 1, 1, 1] }
-  }
-};
-
-const POD_LABELS = ['GPU-A', 'GPU-B', 'GPU-C', 'GPU-D'];
-
-const C = {
-  green: '#00ff88',
-  red: '#ff4455',
-  amber: '#ffaa00',
-  cyan: '#00d4ff',
-  bg: '#0a0e1a',
-  grid: 'rgba(0, 212, 255, 0.04)',
-  podFill: 'rgba(14, 18, 32, 0.92)',
-  textDim: '#4a5a78',
-  textMid: '#8892a8',
-  textBright: '#e0e6f0'
-};
-
-// ── Global state ────────────────────────────────────────────────
-
-let currentScenario = 'multiturn';
-let playing = true;
-let speedMult = 1;
-let simTime = 0;
-let lastTime = 0;
-let animId = null;
-
-// ── Canvas refs ─────────────────────────────────────────────────
-
-const cvN = document.getElementById('cvNaive');
-const cvL = document.getElementById('cvLlmd');
-const ctxN = cvN.getContext('2d');
-const ctxL = cvL.getContext('2d');
-
-function resizeCanvases() {
-  const wrap = cvN.parentElement;
-  const w = wrap.clientWidth;
-  const h = Math.max(360, Math.min(440, w * 0.72));
-  [cvN, cvL].forEach(c => {
-    c.width = w * 2;
-    c.height = h * 2;
-    c.style.height = h + 'px';
-  });
+function hexHash(len) {
+  const chars = '0123456789abcdef';
+  let s = '';
+  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * 16)];
+  return s;
 }
 
-// ── Side state factory ──────────────────────────────────────────
+function randRange(min, max) { return min + Math.random() * (max - min); }
+function randInt(min, max) { return Math.floor(randRange(min, max + 1)); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function createSideState() {
-  return {
-    requests: [],
-    pods: POD_LABELS.map(() => ({
-      queue: 0,
-      cacheHits: 0,
-      totalReqs: 0,
-      ttftSum: 0,
-      ttftCount: 0,
-      glow: 0,
-      peakQueue: 0
-    })),
-    agg: { tokensPerSec: 0, avgTTFT: 0, cacheRate: 0, activeReqs: 0 },
-    nextWave: 0,
-    wavesSent: 0,
-    stickyMap: {}
-  };
-}
+const POD_NAMES = Array.from({length: 8}, (_, i) => 'gpu-pod-' + i);
 
-let naiveState, llmdState;
+// ── EPP Scoring ─────────────────────────────────────────────────
 
-// ── Initialize metric HTML ──────────────────────────────────────
-
-function initMetrics() {
-  ['metricsNaive', 'metricsLlmd'].forEach(id => {
-    const el = document.getElementById(id);
-    el.innerHTML = POD_LABELS.map((name, i) => `
-      <div class="pod-card" id="${id}_pod${i}">
-        <div class="pod-name">${name}</div>
-        <div class="metric"><span class="val" id="${id}_q${i}">0</span> <span class="metric-label">queue</span></div>
-        <div class="metric"><span class="val" id="${id}_c${i}">0%</span> <span class="metric-label">cache</span></div>
-        <div class="metric"><span class="val" id="${id}_t${i}">--</span> <span class="metric-label">TTFT</span></div>
-      </div>
-    `).join('');
-  });
-
-  ['aggNaive', 'aggLlmd'].forEach(id => {
-    document.getElementById(id).innerHTML = `
-      <div class="agg-item"><div class="agg-val" id="${id}_tps">0</div><div class="agg-label">tokens/sec</div></div>
-      <div class="agg-item"><div class="agg-val" id="${id}_ttft">--</div><div class="agg-label">avg TTFT</div></div>
-      <div class="agg-item"><div class="agg-val" id="${id}_cache">0%</div><div class="agg-label">cache hit</div></div>
-      <div class="agg-item"><div class="agg-val" id="${id}_active">0</div><div class="agg-label">active</div></div>
-    `;
-  });
-}
-
-// ── Request creation ────────────────────────────────────────────
-
-function createRequest(side, agentIdx, podIdx, cacheHit) {
-  const cv = side === 'naive' ? cvN : cvL;
-  const W = cv.width;
-  const H = cv.height;
-  const sc = SCENARIOS[currentScenario];
-  const agentCount = sc.agentCount;
-
-  // Agent x position (spread across top)
-  const agentX = W * 0.12 + (agentIdx / Math.max(1, agentCount - 1)) * (W * 0.76);
-  const agentY = H * 0.08;
-
-  // Pod x position
-  const podX = W * 0.15 + (podIdx / 3) * (W * 0.7);
-  const podY = H * 0.82;
-
-  // TTFT depends on cache hit
-  const ttft = cacheHit
-    ? 35 + Math.random() * 65
-    : 280 + Math.random() * 420;
-
-  // Curved control point with some randomness
-  const cpx = (agentX + podX) / 2 + (Math.random() - 0.5) * W * 0.14;
-  const cpy = H * 0.38 + (Math.random() - 0.5) * H * 0.12;
-
-  return {
-    ax: agentX, ay: agentY,
-    px: podX, py: podY,
-    cpx: cpx, cpy: cpy,
-    t: 0,
-    speed: (0.35 + Math.random() * 0.25) / 1000,
-    cacheHit: cacheHit,
-    podIdx: podIdx,
-    agentIdx: agentIdx,
-    ttft: ttft,
-    color: cacheHit ? C.green : C.red,
-    arrived: false,
-    done: false,
-    fadeOut: 1,
-    delay: 0,
-    waiting: false,
-    trail: []
-  };
-}
-
-// ── Bezier interpolation ────────────────────────────────────────
-
-function bezier(ax, ay, cpx, cpy, px, py, t) {
-  const u = 1 - t;
-  return {
-    x: u * u * ax + 2 * u * t * cpx + t * t * px,
-    y: u * u * ay + 2 * u * t * cpy + t * t * py
-  };
-}
-
-// ── Wave spawning ───────────────────────────────────────────────
-
-function spawnWave(state, config, isLlmd) {
-  const sc = SCENARIOS[currentScenario];
-  const count = sc.requestsPerWave;
-
-  for (let i = 0; i < count; i++) {
-    const agentIdx = i % sc.agentCount;
-    let podIdx;
-    let cacheHit;
-
-    if (isLlmd && config.stickyPods) {
-      // Sticky: same agent keeps going to same pod
-      if (state.stickyMap[agentIdx] === undefined) {
-        state.stickyMap[agentIdx] = agentIdx % 4;
+function generateEPPScores(targetPod, cacheType) {
+  const scores = POD_NAMES.map((name, i) => {
+    let cacheMatch, queueDepth, load, totalScore;
+    if (i === targetPod) {
+      if (cacheType === 'hit') {
+        cacheMatch = randRange(88, 99);
+      } else if (cacheType === 'partial') {
+        cacheMatch = randRange(45, 72);
+      } else {
+        cacheMatch = randRange(0, 8);
       }
-      podIdx = state.stickyMap[agentIdx];
-      // First request from each agent is a cache miss, subsequent are hits
-      cacheHit = state.wavesSent > 0 && Math.random() < config.cacheHitProb;
-    } else if (isLlmd) {
-      // Load-aware: pick least-loaded pod
-      let minQ = Infinity;
-      let candidates = [];
-      state.pods.forEach((p, idx) => {
-        if (p.queue < minQ) { minQ = p.queue; candidates = [idx]; }
-        else if (p.queue === minQ) { candidates.push(idx); }
-      });
-      podIdx = candidates[Math.floor(Math.random() * candidates.length)];
-      cacheHit = state.wavesSent > 0 && Math.random() < config.cacheHitProb;
+      queueDepth = randInt(0, 3);
+      load = randRange(20, 55);
     } else {
-      // Naive: weighted random (biased for burst scenario to show imbalance)
-      const bias = config.queueBias;
-      const total = bias.reduce((a, b) => a + b, 0);
-      let r = Math.random() * total;
-      let acc = 0;
-      podIdx = 0;
-      for (let j = 0; j < 4; j++) {
-        acc += bias[j];
-        if (r < acc) { podIdx = j; break; }
+      cacheMatch = cacheType === 'miss' ? randRange(0, 12) : randRange(0, 25);
+      queueDepth = randInt(1, 12);
+      load = randRange(30, 85);
+    }
+    // EPP composite score: cache_weight*cache + (1 - queue_norm) + (1 - load_norm)
+    totalScore = (cacheMatch * 0.6) + ((1 - queueDepth / 12) * 20) + ((1 - load / 100) * 20);
+    return { pod: name, cacheMatch: Math.round(cacheMatch * 10) / 10, queueDepth, load: Math.round(load), totalScore: Math.round(totalScore * 10) / 10 };
+  });
+  scores.sort((a, b) => b.totalScore - a.totalScore);
+  return scores;
+}
+
+// ── TTFT Generator ──────────────────────────────────────────────
+
+function ttftForType(type) {
+  if (type === 'hit') return Math.round(randRange(40, 80));
+  if (type === 'partial') return Math.round(randRange(120, 200));
+  return Math.round(randRange(350, 600));
+}
+
+function ttftWithoutLlmd() {
+  return Math.round(randRange(320, 600));
+}
+
+// ── Trace Data Generator ────────────────────────────────────────
+
+const TRACE_STEPS = [
+  { name: 'user_query_parse', label: 'Parse User Query', type: 'llm', depth: 0, durationBase: 180 },
+  { name: 'reasoning_step', label: 'Reasoning', type: 'llm', depth: 1, durationBase: 320 },
+  { name: 'tool_decision', label: 'Tool Selection', type: 'llm', depth: 1, durationBase: 140 },
+  { name: 'web_search_exec', label: 'web_search()', type: 'tool', depth: 2, durationBase: 450 },
+  { name: 'search_result_analysis', label: 'Analyze Results', type: 'llm', depth: 2, durationBase: 280 },
+  { name: 'sub_query_gen', label: 'Sub-Query Generation', type: 'llm', depth: 1, durationBase: 160 },
+  { name: 'code_exec_call', label: 'code_exec()', type: 'tool', depth: 2, durationBase: 380 },
+  { name: 'mcp_tool_bridge', label: 'MCP: file_read()', type: 'mcp', depth: 2, durationBase: 220 },
+  { name: 'synthesis', label: 'Synthesize Response', type: 'llm', depth: 1, durationBase: 400 },
+  { name: 'final_response', label: 'Final Response', type: 'llm', depth: 0, durationBase: 260 }
+];
+
+function generateTraceData() {
+  const traceId = hexHash(16);
+  const prefixHash = hexHash(8);
+  let currentTime = 0;
+  const totalDuration = TRACE_STEPS.reduce((s, st) => s + st.durationBase + 100, 0);
+
+  const spans = TRACE_STEPS.map((step, idx) => {
+    const isLLM = step.type === 'llm';
+    const isMCP = step.type === 'mcp';
+    const isTool = step.type === 'tool';
+
+    let cacheType, targetPod, ttft;
+
+    if (isLLM || isMCP) {
+      // First call is a miss, second might be partial, rest are hits
+      if (idx === 0) { cacheType = 'miss'; }
+      else if (idx === 1) { cacheType = 'partial'; }
+      else { cacheType = Math.random() < 0.85 ? 'hit' : 'partial'; }
+
+      targetPod = (idx <= 1) ? randInt(0, 7) : (cacheType === 'hit' ? spans[1].targetPod : randInt(0, 7));
+      ttft = ttftForType(cacheType);
+    } else {
+      cacheType = null;
+      targetPod = null;
+      ttft = null;
+    }
+
+    const duration = step.durationBase + Math.round(randRange(-40, 80));
+    const startOffset = currentTime;
+    currentTime += duration + randInt(10, 60);
+
+    return {
+      id: idx,
+      name: step.name,
+      label: step.label,
+      type: step.type,
+      depth: step.depth,
+      startMs: startOffset,
+      durationMs: duration,
+      cacheType,
+      targetPod,
+      ttft,
+      prefixHash: isLLM || isMCP ? prefixHash : null,
+      eppScores: (isLLM || isMCP) ? generateEPPScores(targetPod, cacheType) : null,
+      prefillSaved: cacheType === 'hit' ? Math.round(randRange(180, 340)) : (cacheType === 'partial' ? Math.round(randRange(60, 140)) : 0),
+      queueWait: isLLM || isMCP ? Math.round(randRange(5, 45)) : 0,
+      decodeTime: isLLM || isMCP ? Math.round(randRange(80, 200)) : 0
+    };
+  });
+
+  return { traceId, prefixHash, spans, totalDuration: currentTime };
+}
+
+
+// ================================================================
+// MODE: AGENT TRACE
+// ================================================================
+
+let traceData = null;
+let traceRevealIndex = 0;
+let traceTimer = null;
+let tracePlaying = true;
+let selectedSpanId = null;
+
+function initTrace() {
+  traceData = generateTraceData();
+  traceRevealIndex = 0;
+  selectedSpanId = null;
+  renderRuler();
+  renderTraceSpans();
+  renderDetailEmpty();
+  updateTraceInfo();
+  updateGlobalMetrics();
+  if (tracePlaying) startTraceAnimation();
+}
+
+function renderRuler() {
+  const el = document.getElementById('rulerMarks');
+  if (!traceData) return;
+  const total = traceData.totalDuration;
+  const marks = [0, 0.25, 0.5, 0.75, 1.0];
+  el.innerHTML = marks.map(f => '<span>' + Math.round(f * total) + 'ms</span>').join('');
+}
+
+function renderTraceSpans() {
+  const container = document.getElementById('traceSpans');
+  if (!traceData) { container.innerHTML = ''; return; }
+  const total = traceData.totalDuration;
+
+  container.innerHTML = traceData.spans.map((span, idx) => {
+    const leftPct = (span.startMs / total * 100);
+    const widthPct = Math.max(0.5, span.durationMs / total * 100);
+    const hidden = idx >= traceRevealIndex;
+
+    let barClass = 'span-bar';
+    if (span.type === 'tool') barClass += ' tool-exec';
+    else if (span.type === 'mcp') barClass += ' mcp-call';
+    else if (span.cacheType === 'hit') barClass += ' cache-hit';
+    else if (span.cacheType === 'partial') barClass += ' cache-partial';
+    else barClass += ' cache-miss';
+
+    if (!hidden) barClass += ' animating';
+
+    let iconBg, iconLetter;
+    if (span.type === 'tool') { iconBg = 'var(--purple)'; iconLetter = 'T'; }
+    else if (span.type === 'mcp') { iconBg = 'var(--cyan)'; iconLetter = 'M'; }
+    else if (span.cacheType === 'hit') { iconBg = 'var(--green)'; iconLetter = 'H'; }
+    else if (span.cacheType === 'partial') { iconBg = 'var(--amber)'; iconLetter = 'P'; }
+    else { iconBg = 'var(--red)'; iconLetter = 'X'; }
+
+    const indents = Array.from({length: span.depth}, () => '<span class="span-indent"></span>').join('');
+
+    return '<div class="trace-span' + (selectedSpanId === idx ? ' selected' : '') + '" data-span="' + idx + '" style="opacity:' + (hidden ? '0' : '1') + ';transition:opacity 0.3s;">' +
+      '<div class="span-label">' + indents +
+        '<span class="span-icon" style="background:' + iconBg + ';">' + iconLetter + '</span>' +
+        '<span class="span-name">' + span.label + '</span>' +
+      '</div>' +
+      '<div class="span-bar-area">' +
+        '<div class="' + barClass + '" style="left:' + leftPct + '%;width:' + widthPct + '%;' + (hidden ? 'opacity:0;' : '') + '">' +
+          (span.targetPod !== null ? POD_NAMES[span.targetPod] : span.label) +
+        '</div>' +
+        '<span class="span-bar-timing" style="left:' + (leftPct + widthPct) + '%;' + (hidden ? 'opacity:0;' : '') + '">' + span.durationMs + 'ms</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Attach click handlers
+  container.querySelectorAll('.trace-span').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = parseInt(el.dataset.span);
+      if (id < traceRevealIndex) {
+        selectedSpanId = id;
+        renderTraceSpans();
+        renderDetailForSpan(traceData.spans[id]);
       }
-      cacheHit = Math.random() < config.cacheHitProb;
-    }
-
-    const req = createRequest(isLlmd ? 'llmd' : 'naive', agentIdx, podIdx, cacheHit);
-    req.delay = i * 100 + Math.random() * 80;
-    req.waiting = true;
-    state.requests.push(req);
-    state.pods[podIdx].queue++;
-    state.pods[podIdx].peakQueue = Math.max(state.pods[podIdx].peakQueue, state.pods[podIdx].queue);
-  }
-}
-
-// ── Side update ─────────────────────────────────────────────────
-
-function updateSide(state, config, dt, isLlmd) {
-  const sc = SCENARIOS[currentScenario];
-  const waveTime = sc.waveDelay / speedMult;
-
-  // Spawn waves on schedule
-  if (state.wavesSent < sc.waves && simTime >= state.nextWave) {
-    spawnWave(state, config, isLlmd);
-    state.wavesSent++;
-    state.nextWave = simTime + waveTime;
-  }
-
-  // Update each request
-  let activeCount = 0;
-
-  for (let i = state.requests.length - 1; i >= 0; i--) {
-    const req = state.requests[i];
-    if (req.done) continue;
-
-    if (req.waiting) {
-      req.delay -= dt * speedMult;
-      if (req.delay <= 0) req.waiting = false;
-      activeCount++;
-      continue;
-    }
-
-    // Move along path
-    req.t += req.speed * dt * speedMult;
-
-    // Store trail points
-    if (req.t < 1 && req.trail.length < 8) {
-      const pos = bezier(req.ax, req.ay, req.cpx, req.cpy, req.px, req.py, req.t);
-      req.trail.push({ x: pos.x, y: pos.y, age: 0 });
-    }
-
-    // Age trail points
-    for (let j = req.trail.length - 1; j >= 0; j--) {
-      req.trail[j].age += dt * 0.004;
-      if (req.trail[j].age > 1) req.trail.splice(j, 1);
-    }
-
-    // Arrived at pod
-    if (req.t >= 1 && !req.arrived) {
-      req.arrived = true;
-      req.t = 1;
-      const pod = state.pods[req.podIdx];
-      pod.queue = Math.max(0, pod.queue - 1);
-      pod.totalReqs++;
-      if (req.cacheHit) pod.cacheHits++;
-      pod.ttftSum += req.ttft;
-      pod.ttftCount++;
-      pod.glow = 1;
-    }
-
-    // Fade out after arrival
-    if (req.arrived) {
-      req.fadeOut -= dt * 0.003 * speedMult;
-      if (req.fadeOut <= 0) {
-        req.done = true;
-        continue;
-      }
-    }
-
-    activeCount++;
-  }
-
-  // Garbage collect completed requests
-  if (state.requests.length > 300) {
-    state.requests = state.requests.filter(r => !r.done);
-  }
-
-  // Update aggregate stats
-  let totalHits = 0, totalReqs = 0, totalTTFT = 0, totalTTFTCount = 0;
-  state.pods.forEach(p => {
-    totalHits += p.cacheHits;
-    totalReqs += p.totalReqs;
-    totalTTFT += p.ttftSum;
-    totalTTFTCount += p.ttftCount;
-    p.glow *= 0.94;
-  });
-
-  state.agg.cacheRate = totalReqs > 0 ? totalHits / totalReqs : 0;
-  state.agg.avgTTFT = totalTTFTCount > 0 ? totalTTFT / totalTTFTCount : 0;
-  state.agg.tokensPerSec = Math.round(
-    totalReqs * (isLlmd ? 82 : 28) + Math.random() * 15
-  );
-  state.agg.activeReqs = activeCount;
-
-  // Auto-loop when all waves done and no active requests
-  if (state.wavesSent >= sc.waves && activeCount === 0) {
-    resetSideState(state);
-  }
-}
-
-function resetSideState(state) {
-  state.requests = [];
-  state.pods.forEach(p => {
-    p.queue = 0;
-    p.cacheHits = 0;
-    p.totalReqs = 0;
-    p.ttftSum = 0;
-    p.ttftCount = 0;
-    p.glow = 0;
-    p.peakQueue = 0;
-  });
-  state.agg = { tokensPerSec: 0, avgTTFT: 0, cacheRate: 0, activeReqs: 0 };
-  state.nextWave = simTime + 400;
-  state.wavesSent = 0;
-  state.stickyMap = {};
-}
-
-// ── Canvas Drawing ──────────────────────────────────────────────
-
-function drawSide(ctx, cv, state, isLlmd) {
-  const W = cv.width;
-  const H = cv.height;
-  const sc = SCENARIOS[currentScenario];
-
-  ctx.clearRect(0, 0, W, H);
-
-  // Background
-  ctx.fillStyle = C.bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // Grid lines
-  ctx.strokeStyle = C.grid;
-  ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 60) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, H);
-    ctx.stroke();
-  }
-  for (let y = 0; y < H; y += 60) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
-    ctx.stroke();
-  }
-
-  // Radar sweep effect
-  const sweepAngle = (simTime * 0.0004 * speedMult) % (Math.PI * 2);
-  const cx = W / 2;
-  const cy = H / 2;
-  const sweepR = Math.max(W, H) * 0.55;
-  const sweepColor = isLlmd ? C.green : C.red;
-
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(sweepAngle);
-
-  // Sweep line
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(sweepR, 0);
-  ctx.strokeStyle = sweepColor;
-  ctx.globalAlpha = 0.12;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Sweep trailing arc
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.arc(0, 0, sweepR, -0.4, 0, false);
-  ctx.closePath();
-  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, sweepR);
-  grad.addColorStop(0, sweepColor);
-  grad.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = grad;
-  ctx.globalAlpha = 0.04;
-  ctx.fill();
-
-  ctx.restore();
-
-  // Concentric guide circles
-  ctx.strokeStyle = isLlmd ? 'rgba(0, 255, 136, 0.03)' : 'rgba(255, 68, 85, 0.03)';
-  ctx.lineWidth = 1;
-  for (let r = sweepR * 0.25; r <= sweepR; r += sweepR * 0.25) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // ── Draw agents (top) ────────────────────────────────
-  const agentCount = sc.agentCount;
-  for (let i = 0; i < agentCount; i++) {
-    const ax = W * 0.12 + (i / Math.max(1, agentCount - 1)) * (W * 0.76);
-    const ay = H * 0.08;
-
-    // Agent diamond icon
-    ctx.save();
-    ctx.shadowColor = C.cyan;
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = 'rgba(0, 212, 255, 0.15)';
-    ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(ax, ay - 14);
-    ctx.lineTo(ax + 10, ay);
-    ctx.lineTo(ax, ay + 14);
-    ctx.lineTo(ax - 10, ay);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-
-    // Agent label
-    ctx.fillStyle = C.cyan;
-    ctx.font = '18px "Red Hat Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(sc.agentLabels[i], ax, ay + 20);
-  }
-
-  // ── Draw pods (bottom) ───────────────────────────────
-  for (let i = 0; i < 4; i++) {
-    const px = W * 0.15 + (i / 3) * (W * 0.7);
-    const py = H * 0.82;
-    const pw = 76;
-    const ph = 44;
-    const pod = state.pods[i];
-
-    // Pod glow
-    ctx.save();
-    if (pod.glow > 0.02) {
-      ctx.shadowColor = isLlmd ? C.green : C.red;
-      ctx.shadowBlur = 20 * pod.glow;
-    }
-
-    // Pod body
-    const rx = px - pw / 2;
-    const ry = py - ph / 2;
-    drawRoundRect(ctx, rx, ry, pw, ph, 6);
-    ctx.fillStyle = C.podFill;
-    ctx.fill();
-
-    // Queue fill bar inside pod
-    const qFrac = Math.min(pod.queue / 12, 1);
-    if (qFrac > 0) {
-      ctx.save();
-      drawRoundRect(ctx, rx, ry, pw, ph, 6);
-      ctx.clip();
-      const barColor = qFrac > 0.6 ? C.red : (qFrac > 0.3 ? C.amber : C.green);
-      ctx.fillStyle = barColor;
-      ctx.globalAlpha = 0.25;
-      const fillH = qFrac * (ph - 4);
-      ctx.fillRect(rx + 2, ry + ph - fillH - 2, pw - 4, fillH);
-      ctx.restore();
-    }
-
-    // Pod border (color indicates load)
-    const borderColor = pod.queue > 6
-      ? (isLlmd ? 'rgba(255, 170, 0, 0.4)' : 'rgba(255, 68, 85, 0.5)')
-      : (isLlmd ? 'rgba(0, 255, 136, 0.3)' : 'rgba(0, 212, 255, 0.2)');
-    drawRoundRect(ctx, rx, ry, pw, ph, 6);
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-
-    // Pod label
-    ctx.fillStyle = C.textMid;
-    ctx.font = '16px "Red Hat Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(POD_LABELS[i], px, py + ph / 2 + 8);
-  }
-
-  // ── Draw request paths and dots ──────────────────────
-  // First pass: draw path lines
-  state.requests.forEach(req => {
-    if (req.done || req.waiting) return;
-
-    ctx.strokeStyle = req.cacheHit
-      ? 'rgba(0, 255, 136, 0.07)'
-      : 'rgba(255, 68, 85, 0.07)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(req.ax, req.ay);
-    ctx.quadraticCurveTo(req.cpx, req.cpy, req.px, req.py);
-    ctx.stroke();
-  });
-
-  // Second pass: draw trail particles
-  state.requests.forEach(req => {
-    if (req.done || req.waiting) return;
-    req.trail.forEach(tp => {
-      const alpha = Math.max(0, (1 - tp.age) * 0.35);
-      ctx.beginPath();
-      ctx.arc(tp.x, tp.y, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = req.color;
-      ctx.globalAlpha = alpha;
-      ctx.fill();
-      ctx.globalAlpha = 1;
     });
   });
-
-  // Third pass: draw dots
-  state.requests.forEach(req => {
-    if (req.done || req.waiting) return;
-
-    const pos = bezier(
-      req.ax, req.ay,
-      req.cpx, req.cpy,
-      req.px, req.py,
-      Math.min(req.t, 1)
-    );
-
-    ctx.save();
-    ctx.globalAlpha = req.arrived ? Math.max(0, req.fadeOut) : 1;
-
-    // Glow
-    ctx.shadowColor = req.color;
-    ctx.shadowBlur = 16;
-
-    // Queued indicator (turn amber if pod queue is high)
-    const isQueued = !req.arrived && req.t > 0.8 && state.pods[req.podIdx].queue > 7;
-    const dotColor = isQueued ? C.amber : req.color;
-
-    // Outer dot
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, req.arrived ? 4 : 6.5, 0, Math.PI * 2);
-    ctx.fillStyle = dotColor;
-    ctx.fill();
-
-    // Inner bright core
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = (req.arrived ? Math.max(0, req.fadeOut) : 1) * 0.7;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, req.arrived ? 1.5 : 2.8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-  });
 }
 
-function drawRoundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arcTo(x + w, y, x + w, y + r, r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-  ctx.lineTo(x + r, y + h);
-  ctx.arcTo(x, y + h, x, y + h - r, r);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
+function updateTraceInfo() {
+  if (!traceData) return;
+  document.getElementById('traceId').textContent = traceData.traceId.substring(0, 12) + '...';
+  document.getElementById('traceSteps').textContent = Math.min(traceRevealIndex, traceData.spans.length) + '/' + traceData.spans.length;
+  const elapsed = traceRevealIndex > 0 ? traceData.spans[Math.min(traceRevealIndex - 1, traceData.spans.length - 1)].startMs + traceData.spans[Math.min(traceRevealIndex - 1, traceData.spans.length - 1)].durationMs : 0;
+  document.getElementById('traceDuration').textContent = elapsed + 'ms';
 }
 
-// ── Metrics DOM update ──────────────────────────────────────────
-
-function updateMetricsDOM(state, prefix) {
-  state.pods.forEach((pod, i) => {
-    const qEl = document.getElementById(prefix + '_q' + i);
-    const cEl = document.getElementById(prefix + '_c' + i);
-    const tEl = document.getElementById(prefix + '_t' + i);
-
-    if (qEl) {
-      qEl.textContent = pod.queue;
-      qEl.style.color = pod.queue > 6 ? C.red : (pod.queue > 3 ? C.amber : C.green);
+function startTraceAnimation() {
+  stopTraceAnimation();
+  if (traceRevealIndex >= traceData.spans.length) return;
+  traceTimer = setTimeout(() => {
+    if (!tracePlaying) return;
+    traceRevealIndex++;
+    renderTraceSpans();
+    updateTraceInfo();
+    updateGlobalMetrics();
+    if (traceRevealIndex < traceData.spans.length) {
+      startTraceAnimation();
     }
-    if (cEl) {
-      const rate = pod.totalReqs > 0 ? Math.round(pod.cacheHits / pod.totalReqs * 100) : 0;
-      cEl.textContent = rate + '%';
-      cEl.style.color = rate > 60 ? C.green : (rate > 20 ? C.amber : C.red);
-    }
-    if (tEl) {
-      const ttft = pod.ttftCount > 0 ? Math.round(pod.ttftSum / pod.ttftCount) : 0;
-      tEl.textContent = ttft > 0 ? ttft + 'ms' : '--';
-      tEl.style.color = ttft > 0 ? (ttft < 120 ? C.green : (ttft < 300 ? C.amber : C.red)) : C.textDim;
-    }
-  });
-
-  // Aggregate
-  const aggPrefix = prefix === 'metricsNaive' ? 'aggNaive' : 'aggLlmd';
-  const setVal = (suffix, val) => {
-    const el = document.getElementById(aggPrefix + '_' + suffix);
-    if (el) el.textContent = val;
-  };
-
-  setVal('tps', state.agg.tokensPerSec.toLocaleString());
-  setVal('ttft', state.agg.avgTTFT > 0 ? Math.round(state.agg.avgTTFT) + 'ms' : '--');
-  setVal('cache', Math.round(state.agg.cacheRate * 100) + '%');
-  setVal('active', state.agg.activeReqs);
+  }, 600);
 }
 
-// ── Animation loop ──────────────────────────────────────────────
+function stopTraceAnimation() {
+  if (traceTimer) { clearTimeout(traceTimer); traceTimer = null; }
+}
 
-function animate(ts) {
-  if (!lastTime) lastTime = ts;
-  const dt = Math.min(ts - lastTime, 50);
-  lastTime = ts;
+function toggleTracePlay() {
+  tracePlaying = !tracePlaying;
+  const btn = document.getElementById('tracePlayBtn');
+  btn.textContent = tracePlaying ? 'PAUSE' : 'PLAY';
+  btn.classList.toggle('active', tracePlaying);
+  if (tracePlaying) startTraceAnimation();
+  else stopTraceAnimation();
+}
 
-  if (playing) {
-    simTime += dt * speedMult;
-    const sc = SCENARIOS[currentScenario];
-    updateSide(naiveState, sc.naive, dt, false);
-    updateSide(llmdState, sc.llmd, dt, true);
+function rerunTrace() {
+  stopTraceAnimation();
+  tracePlaying = true;
+  document.getElementById('tracePlayBtn').textContent = 'PAUSE';
+  document.getElementById('tracePlayBtn').classList.add('active');
+  initTrace();
+}
+
+// Detail panel rendering
+function renderDetailEmpty() {
+  document.getElementById('detailPanel').innerHTML = '<h3>Request Detail</h3><div class="empty-state"><div class="es-icon">||</div>Click any span to view EPP scoring, pod selection, and latency breakdown</div>';
+}
+
+function renderDetailForSpan(span) {
+  const panel = document.getElementById('detailPanel');
+
+  if (span.type === 'tool') {
+    panel.innerHTML = '<h3>Tool Execution Detail</h3>' +
+      '<div class="detail-section"><div class="detail-section-title">Tool Info</div>' +
+      '<div class="prefix-hash">' +
+      '<div class="ph-row"><span class="ph-label">Type</span><span class="ph-val">External Tool</span></div>' +
+      '<div class="ph-row"><span class="ph-label">Name</span><span class="ph-val">' + span.label + '</span></div>' +
+      '<div class="ph-row"><span class="ph-label">Duration</span><span class="ph-val">' + span.durationMs + 'ms</span></div>' +
+      '<div class="ph-row"><span class="ph-label">Note</span><span class="ph-val" style="color:var(--text-dim);">Tool execution happens outside LLM inference. The result is fed back as context for the next LLM call, which benefits from prefix caching.</span></div>' +
+      '</div></div>';
+    return;
   }
 
-  drawSide(ctxN, cvN, naiveState, false);
-  drawSide(ctxL, cvL, llmdState, true);
+  const scores = span.eppScores;
+  const selectedPodName = POD_NAMES[span.targetPod];
+  let cacheTag;
+  if (span.cacheType === 'hit') cacheTag = '<span class="tag tag-green">CACHE HIT</span>';
+  else if (span.cacheType === 'partial') cacheTag = '<span class="tag tag-amber">PARTIAL MATCH</span>';
+  else cacheTag = '<span class="tag tag-red">CACHE MISS</span>';
 
-  updateMetricsDOM(naiveState, 'metricsNaive');
-  updateMetricsDOM(llmdState, 'metricsLlmd');
+  let html = '<h3>' + span.label + ' ' + cacheTag + '</h3>';
 
-  animId = requestAnimationFrame(animate);
+  // EPP Scores
+  html += '<div class="detail-section"><div class="detail-section-title">EPP Pod Scores</div>';
+  html += '<table class="pod-scores"><tr><th>Pod</th><th>Cache %</th><th>Queue</th><th>Load %</th><th>Score</th><th class="score-bar-cell"></th></tr>';
+  const maxScore = scores[0].totalScore;
+  scores.forEach(s => {
+    const isSelected = s.pod === selectedPodName;
+    const barPct = (s.totalScore / maxScore) * 100;
+    let barColor = s.totalScore > 60 ? 'var(--green)' : (s.totalScore > 35 ? 'var(--amber)' : 'var(--red)');
+    html += '<tr class="' + (isSelected ? 'selected-pod' : '') + '">' +
+      '<td>' + s.pod + (isSelected ? ' *' : '') + '</td>' +
+      '<td>' + s.cacheMatch + '%</td>' +
+      '<td>' + s.queueDepth + '</td>' +
+      '<td>' + s.load + '%</td>' +
+      '<td>' + s.totalScore + '</td>' +
+      '<td class="score-bar-cell"><div class="score-bar-bg"><div class="score-bar-fill" style="width:' + barPct + '%;background:' + barColor + ';"></div></div></td>' +
+      '</tr>';
+  });
+  html += '</table></div>';
+
+  // Prefix Hash
+  html += '<div class="detail-section"><div class="detail-section-title">Prefix Hash Match</div>';
+  html += '<div class="prefix-hash">';
+  html += '<div class="ph-row"><span class="ph-label">Request Prefix</span><span class="ph-val">0x' + span.prefixHash + '</span></div>';
+  html += '<div class="ph-row"><span class="ph-label">Pod Cache Key</span><span class="ph-val' + (span.cacheType === 'hit' ? ' match' : '') + '">0x' + (span.cacheType === 'hit' ? span.prefixHash : hexHash(8)) + '</span></div>';
+  html += '<div class="ph-row"><span class="ph-label">Match</span><span class="ph-val' + (span.cacheType === 'hit' ? ' match' : '') + '">' + (span.cacheType === 'hit' ? 'FULL MATCH' : (span.cacheType === 'partial' ? 'PARTIAL (' + Math.round(randRange(45, 72)) + '%)' : 'NO MATCH')) + '</span></div>';
+  html += '<div class="ph-row"><span class="ph-label">Selected Pod</span><span class="ph-val" style="color:var(--blue);">' + selectedPodName + '</span></div>';
+  html += '<div class="ph-row"><span class="ph-label">Reason</span><span class="ph-val" style="color:var(--text-dim);">' + (span.cacheType === 'hit' ? 'Highest cache match + low queue' : (span.cacheType === 'partial' ? 'Best partial prefix overlap' : 'Lowest queue depth (no cache available)')) + '</span></div>';
+  html += '</div></div>';
+
+  // TTFT
+  html += '<div class="detail-section"><div class="detail-section-title">TTFT: ' + span.ttft + 'ms</div></div>';
+
+  // Latency breakdown
+  const totalLat = span.prefillSaved + span.queueWait + span.decodeTime + span.ttft;
+  const maxLat = Math.max(span.prefillSaved, span.queueWait, span.decodeTime, span.ttft, 1);
+
+  html += '<div class="detail-section"><div class="detail-section-title">Latency Breakdown</div>';
+  html += '<div class="latency-breakdown">';
+  html += latRow('Prefill saved', span.prefillSaved, maxLat, 'prefill');
+  html += latRow('Queue wait', span.queueWait, maxLat, 'queue');
+  html += latRow('Decode', span.decodeTime, maxLat, 'decode');
+  html += latRow('TTFT', span.ttft, maxLat, 'total');
+  html += '</div></div>';
+
+  // Compare with/without bar
+  const withoutTTFT = ttftWithoutLlmd();
+  html += '<div class="detail-section"><div class="detail-section-title">With vs Without llm-d</div>';
+  html += '<div class="latency-breakdown">';
+  html += latRow('With llm-d', span.ttft, Math.max(span.ttft, withoutTTFT), 'prefill');
+  html += latRow('Without', withoutTTFT, Math.max(span.ttft, withoutTTFT), 'total');
+  html += '</div>';
+  const savings = Math.round((1 - span.ttft / withoutTTFT) * 100);
+  html += '<div style="text-align:center;margin-top:6px;font-family:var(--font-mono);font-size:0.72rem;color:var(--green);">' + (savings > 0 ? savings + '% faster with llm-d' : 'No improvement (cold cache)') + '</div>';
+  html += '</div>';
+
+  panel.innerHTML = html;
 }
 
-// ── Controls ────────────────────────────────────────────────────
-
-function togglePlay() {
-  playing = !playing;
-  const btn = document.getElementById('btnPlay');
-  btn.textContent = playing ? 'PAUSE' : 'PLAY';
-  btn.classList.toggle('active', playing);
+function latRow(label, val, max, cls) {
+  const pct = (val / max) * 100;
+  return '<div class="lat-row"><span class="lat-label">' + label + '</span>' +
+    '<div class="lat-bar-bg"><div class="lat-bar-fill ' + cls + '" style="width:' + pct + '%;"></div></div>' +
+    '<span class="lat-val">' + val + 'ms</span></div>';
 }
 
-function resetSim() {
-  simTime = 0;
-  lastTime = 0;
-  naiveState = createSideState();
-  llmdState = createSideState();
-  naiveState.nextWave = 400;
-  llmdState.nextWave = 400;
+
+// ================================================================
+// MODE: COMPARISON
+// ================================================================
+
+let cmpData = null;
+let cmpRevealIndex = 0;
+let cmpTimer = null;
+let cmpPlaying = true;
+
+function initComparison() {
+  cmpData = generateComparisonData();
+  cmpRevealIndex = 0;
+  renderComparisonSpans();
+  renderComparisonMetrics();
+  renderComparisonBars();
+  if (cmpPlaying) startCmpAnimation();
 }
 
-// Expose to onclick handlers
-window.togglePlay = togglePlay;
-window.resetSim = resetSim;
+function generateComparisonData() {
+  const prefixHash = hexHash(8);
+  let withTime = 0;
+  let withoutTime = 0;
 
-// ── Scenario switching ──────────────────────────────────────────
+  const steps = TRACE_STEPS.map((step, idx) => {
+    const isLLM = step.type === 'llm' || step.type === 'mcp';
 
-document.querySelectorAll('.scenario-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentScenario = btn.dataset.scenario;
-    document.getElementById('scenarioDesc').textContent = SCENARIOS[currentScenario].desc;
-    resetSim();
-    if (!playing) {
-      playing = true;
-      document.getElementById('btnPlay').textContent = 'PAUSE';
-      document.getElementById('btnPlay').classList.add('active');
+    // Without llm-d: always cache miss, random pod
+    const withoutTtft = isLLM ? ttftWithoutLlmd() : 0;
+    const withoutDuration = step.durationBase + Math.round(randRange(40, 120)) + (isLLM ? withoutTtft : 0);
+    const withoutStart = withoutTime;
+    withoutTime += withoutDuration + randInt(10, 40);
+
+    // With llm-d: cache hits after first
+    let withCacheType;
+    if (!isLLM) withCacheType = null;
+    else if (idx === 0) withCacheType = 'miss';
+    else if (idx === 1) withCacheType = 'partial';
+    else withCacheType = Math.random() < 0.88 ? 'hit' : 'partial';
+
+    const withTtft = isLLM ? ttftForType(withCacheType || 'miss') : 0;
+    const withDuration = step.durationBase + Math.round(randRange(-20, 40)) + (isLLM ? withTtft : 0);
+    const withStart = withTime;
+    withTime += withDuration + randInt(10, 30);
+
+    return {
+      label: step.label,
+      type: step.type,
+      depth: step.depth,
+      without: { startMs: withoutStart, durationMs: withoutDuration, ttft: withoutTtft, pod: randInt(0, 7), cacheType: isLLM ? 'miss' : null },
+      with: { startMs: withStart, durationMs: withDuration, ttft: withTtft, pod: isLLM ? (idx <= 1 ? randInt(0, 7) : 2) : null, cacheType: withCacheType }
+    };
+  });
+
+  return { steps, withTotalDuration: withTime, withoutTotalDuration: withoutTime, prefixHash };
+}
+
+function renderComparisonSpans() {
+  ['cmpWithoutSpans', 'cmpWithSpans'].forEach(containerId => {
+    const isWith = containerId === 'cmpWithSpans';
+    const container = document.getElementById(containerId);
+    if (!cmpData) { container.innerHTML = ''; return; }
+
+    const totalDur = isWith ? cmpData.withTotalDuration : cmpData.withoutTotalDuration;
+
+    container.innerHTML = cmpData.steps.map((step, idx) => {
+      const side = isWith ? step.with : step.without;
+      const hidden = idx >= cmpRevealIndex;
+      const leftPct = side.startMs / totalDur * 100;
+      const widthPct = Math.max(0.5, side.durationMs / totalDur * 100);
+
+      let barClass = 'span-bar';
+      if (step.type === 'tool') barClass += ' tool-exec';
+      else if (step.type === 'mcp') barClass += ' mcp-call';
+      else if (side.cacheType === 'hit') barClass += ' cache-hit';
+      else if (side.cacheType === 'partial') barClass += ' cache-partial';
+      else barClass += ' cache-miss';
+      if (!hidden) barClass += ' animating';
+
+      const indents = Array.from({length: step.depth}, () => '<span class="span-indent"></span>').join('');
+
+      return '<div class="trace-span" style="opacity:' + (hidden ? '0' : '1') + ';transition:opacity 0.3s;">' +
+        '<div class="span-label" style="width:120px;min-width:120px;">' + indents +
+          '<span class="span-name" style="font-size:0.65rem;">' + step.label + '</span>' +
+        '</div>' +
+        '<div class="span-bar-area">' +
+          '<div class="' + barClass + '" style="left:' + leftPct + '%;width:' + widthPct + '%;' + (hidden ? 'opacity:0;' : '') + '">' +
+            side.durationMs + 'ms' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function renderComparisonMetrics() {
+  if (!cmpData) return;
+
+  const revealed = cmpData.steps.slice(0, cmpRevealIndex);
+  const withLLMSteps = revealed.filter(s => s.type !== 'tool');
+  const withoutLLMSteps = revealed.filter(s => s.type !== 'tool');
+
+  const withTotal = revealed.reduce((s, st) => s + st.with.durationMs, 0);
+  const withoutTotal = revealed.reduce((s, st) => s + st.without.durationMs, 0);
+
+  const withAvgTTFT = withLLMSteps.length > 0 ? Math.round(withLLMSteps.reduce((s, st) => s + st.with.ttft, 0) / withLLMSteps.length) : 0;
+  const withoutAvgTTFT = withoutLLMSteps.length > 0 ? Math.round(withoutLLMSteps.reduce((s, st) => s + st.without.ttft, 0) / withoutLLMSteps.length) : 0;
+
+  const withHits = withLLMSteps.filter(s => s.with.cacheType === 'hit').length;
+  const withCacheRate = withLLMSteps.length > 0 ? Math.round(withHits / withLLMSteps.length * 100) : 0;
+
+  document.getElementById('cmpWithoutMetrics').innerHTML =
+    '<div class="cmp-metric"><div class="cm-label">Total</div><div class="cm-val" style="color:var(--red);">' + withoutTotal + 'ms</div></div>' +
+    '<div class="cmp-metric"><div class="cm-label">Avg TTFT</div><div class="cm-val" style="color:var(--red);">' + withoutAvgTTFT + 'ms</div></div>' +
+    '<div class="cmp-metric"><div class="cm-label">Cache Rate</div><div class="cm-val" style="color:var(--red);">0%</div></div>' +
+    '<div class="cmp-metric"><div class="cm-label">Throughput</div><div class="cm-val" style="color:var(--red);">' + Math.round(randRange(1800, 2400)) + ' t/s</div></div>';
+
+  document.getElementById('cmpWithMetrics').innerHTML =
+    '<div class="cmp-metric"><div class="cm-label">Total</div><div class="cm-val" style="color:var(--green);">' + withTotal + 'ms</div></div>' +
+    '<div class="cmp-metric"><div class="cm-label">Avg TTFT</div><div class="cm-val" style="color:var(--green);">' + withAvgTTFT + 'ms</div></div>' +
+    '<div class="cmp-metric"><div class="cm-label">Cache Rate</div><div class="cm-val" style="color:var(--green);">' + withCacheRate + '%</div></div>' +
+    '<div class="cmp-metric"><div class="cm-label">Throughput</div><div class="cm-val" style="color:var(--green);">' + Math.round(randRange(4200, 5800)) + ' t/s</div></div>';
+}
+
+function renderComparisonBars() {
+  if (!cmpData) return;
+  const revealed = cmpData.steps.slice(0, cmpRevealIndex);
+  const maxDur = Math.max(...cmpData.steps.map(s => Math.max(s.with.durationMs, s.without.durationMs)), 1);
+
+  document.getElementById('cmpWithoutBars').innerHTML = revealed.map(step => {
+    const pct = step.without.durationMs / maxDur * 100;
+    return '<div class="bar-row"><span class="bar-step-label">' + step.label + '</span><div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%;background:var(--red);"></div></div><span class="bar-val" style="color:var(--red);">' + step.without.durationMs + '</span></div>';
+  }).join('');
+
+  document.getElementById('cmpWithBars').innerHTML = revealed.map(step => {
+    const pct = step.with.durationMs / maxDur * 100;
+    const col = step.with.cacheType === 'hit' ? 'var(--green)' : (step.with.cacheType === 'partial' ? 'var(--amber)' : 'var(--red)');
+    return '<div class="bar-row"><span class="bar-step-label">' + step.label + '</span><div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%;background:' + col + ';"></div></div><span class="bar-val" style="color:' + col + ';">' + step.with.durationMs + '</span></div>';
+  }).join('');
+}
+
+function startCmpAnimation() {
+  stopCmpAnimation();
+  if (!cmpData || cmpRevealIndex >= cmpData.steps.length) return;
+  cmpTimer = setTimeout(() => {
+    if (!cmpPlaying) return;
+    cmpRevealIndex++;
+    renderComparisonSpans();
+    renderComparisonMetrics();
+    renderComparisonBars();
+    if (cmpRevealIndex < cmpData.steps.length) startCmpAnimation();
+  }, 700);
+}
+
+function stopCmpAnimation() {
+  if (cmpTimer) { clearTimeout(cmpTimer); cmpTimer = null; }
+}
+
+function toggleCmpPlay() {
+  cmpPlaying = !cmpPlaying;
+  const btn = document.getElementById('cmpPlayBtn');
+  btn.textContent = cmpPlaying ? 'PAUSE' : 'PLAY';
+  btn.classList.toggle('active', cmpPlaying);
+  if (cmpPlaying) startCmpAnimation();
+  else stopCmpAnimation();
+}
+
+function rerunComparison() {
+  stopCmpAnimation();
+  cmpPlaying = true;
+  document.getElementById('cmpPlayBtn').textContent = 'PAUSE';
+  document.getElementById('cmpPlayBtn').classList.add('active');
+  initComparison();
+}
+
+
+// ================================================================
+// MODE: MULTI-AGENT
+// ================================================================
+
+const MULTI_AGENTS = [
+  { name: 'Research Agent', color: 'var(--blue)', prompt: 'research_assistant_v2', tools: ['web_search', 'file_read'] },
+  { name: 'Code Agent', color: 'var(--green)', prompt: 'code_assistant_v3', tools: ['code_exec', 'file_read'] },
+  { name: 'Review Agent', color: 'var(--purple)', prompt: 'code_assistant_v3', tools: ['code_exec', 'file_read'] }
+];
+
+let multiState = null;
+let multiTimer = null;
+let multiPlaying = true;
+
+function initMultiAgent() {
+  multiState = {
+    pods: POD_NAMES.map((name, i) => ({
+      name,
+      cacheKeys: [],
+      queue: 0,
+      load: randRange(10, 30),
+      requests: 0,
+      cacheHits: 0
+    })),
+    agents: MULTI_AGENTS.map((a, i) => ({
+      ...a,
+      status: 'idle',
+      currentStep: '',
+      ttft: 0,
+      targetPod: null,
+      prefixHash: hexHash(8)
+    })),
+    cacheShares: [],
+    tick: 0
+  };
+
+  // Code Agent and Review Agent share the same system prompt
+  multiState.agents[1].prefixHash = 'a3f7c2e1';
+  multiState.agents[2].prefixHash = 'a3f7c2e1';
+
+  renderMultiPods();
+  renderAgentLanes();
+  renderCacheSharing();
+  if (multiPlaying) startMultiAnimation();
+}
+
+function renderMultiPods() {
+  const grid = document.getElementById('multiPodGrid');
+  if (!multiState) return;
+
+  grid.innerHTML = multiState.pods.map((pod, i) => {
+    const isActive = multiState.agents.some(a => a.targetPod === i && a.status !== 'idle');
+    const cacheColor = pod.cacheHits > 3 ? 'var(--green)' : (pod.cacheHits > 0 ? 'var(--amber)' : 'var(--text-dim)');
+    const barColor = pod.queue > 4 ? 'var(--red)' : (pod.queue > 2 ? 'var(--amber)' : 'var(--green)');
+    const barWidth = Math.min(100, pod.queue * 14);
+    const cacheRate = pod.requests > 0 ? Math.round(pod.cacheHits / pod.requests * 100) : 0;
+
+    return '<div class="pod-node' + (isActive ? ' active' : '') + '">' +
+      '<div class="pn-name">' + pod.name + '</div>' +
+      '<div class="pn-cache" style="color:' + cacheColor + ';">' + cacheRate + '% cache</div>' +
+      '<div class="pn-queue">queue: ' + pod.queue + ' | load: ' + Math.round(pod.load) + '%</div>' +
+      (pod.cacheKeys.length > 0 ? '<div style="margin-top:4px;font-family:var(--font-mono);font-size:0.55rem;color:var(--text-dim);">keys: ' + pod.cacheKeys.slice(0, 2).map(k => '0x' + k.substring(0, 6)).join(', ') + '</div>' : '') +
+      '<div class="pn-bar" style="background:' + barColor + ';width:' + barWidth + '%;"></div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderAgentLanes() {
+  const container = document.getElementById('agentLanes');
+  if (!multiState) return;
+
+  container.innerHTML = multiState.agents.map((agent, i) => {
+    const ttftColor = agent.ttft > 0 ? (agent.ttft < 100 ? 'var(--green)' : (agent.ttft < 250 ? 'var(--amber)' : 'var(--red)')) : 'var(--text-dim)';
+    return '<div class="agent-lane">' +
+      '<span class="al-badge" style="background:' + agent.color + ';color:#fff;">' + agent.name + '</span>' +
+      '<span class="al-status">' + (agent.status === 'idle' ? 'Idle' : agent.currentStep) + (agent.targetPod !== null ? ' -> ' + POD_NAMES[agent.targetPod] : '') + '</span>' +
+      '<span class="al-ttft" style="color:' + ttftColor + ';">' + (agent.ttft > 0 ? agent.ttft + 'ms' : '--') + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function renderCacheSharing() {
+  const container = document.getElementById('cacheSharingList');
+  if (!multiState) return;
+
+  // Group agents by prefix hash
+  const groups = {};
+  multiState.agents.forEach(a => {
+    if (!groups[a.prefixHash]) groups[a.prefixHash] = [];
+    groups[a.prefixHash].push(a);
+  });
+
+  container.innerHTML = Object.entries(groups).map(([hash, agents]) => {
+    const colors = { 'var(--blue)': '#3b82f6', 'var(--green)': '#22c55e', 'var(--purple)': '#a855f7' };
+    return '<div class="cache-share-item">' +
+      '<div class="cs-prefix">Prefix: 0x' + hash + (agents.length > 1 ? ' <span class="tag tag-green">SHARED</span>' : '') + '</div>' +
+      '<div class="cs-agents">' + agents.map(a => {
+        const hex = colors[a.color] || '#3b82f6';
+        return '<span class="cs-agent-tag" style="background:' + hex + '20;color:' + hex + ';border:1px solid ' + hex + '40;">' + a.name + '</span>';
+      }).join('') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+const MULTI_STEP_NAMES = ['Reasoning', 'Tool selection', 'web_search()', 'code_exec()', 'Analyzing', 'Synthesizing', 'file_read()', 'Responding'];
+
+function multiTick() {
+  if (!multiState) return;
+  multiState.tick++;
+
+  multiState.agents.forEach((agent, agentIdx) => {
+    // Randomly start/advance agent work
+    if (agent.status === 'idle' && Math.random() < 0.15) {
+      agent.status = 'working';
+      agent.currentStep = MULTI_STEP_NAMES[randInt(0, MULTI_STEP_NAMES.length - 1)];
+
+      // Find pod with matching cache, or least loaded
+      let bestPod = 0;
+      let bestScore = -1;
+      multiState.pods.forEach((pod, pi) => {
+        const hasCache = pod.cacheKeys.includes(agent.prefixHash);
+        const score = (hasCache ? 60 : 0) + (10 - pod.queue) + (100 - pod.load) * 0.2;
+        if (score > bestScore) { bestScore = score; bestPod = pi; }
+      });
+
+      agent.targetPod = bestPod;
+      const pod = multiState.pods[bestPod];
+      pod.queue++;
+      pod.requests++;
+
+      const hasCache = pod.cacheKeys.includes(agent.prefixHash);
+      if (hasCache) {
+        agent.ttft = ttftForType('hit');
+        pod.cacheHits++;
+      } else {
+        agent.ttft = ttftForType(pod.cacheKeys.length > 0 ? 'partial' : 'miss');
+        if (!pod.cacheKeys.includes(agent.prefixHash)) {
+          pod.cacheKeys.push(agent.prefixHash);
+          if (pod.cacheKeys.length > 4) pod.cacheKeys.shift();
+        }
+      }
+
+      pod.load = clamp(pod.load + randRange(5, 15), 10, 95);
+
+    } else if (agent.status === 'working' && Math.random() < 0.2) {
+      // Finish current step
+      if (agent.targetPod !== null) {
+        const pod = multiState.pods[agent.targetPod];
+        pod.queue = Math.max(0, pod.queue - 1);
+        pod.load = clamp(pod.load - randRange(3, 10), 10, 95);
+      }
+      agent.status = 'idle';
+      agent.currentStep = '';
+      agent.targetPod = null;
     }
+  });
+
+  // Decay pod loads
+  multiState.pods.forEach(p => {
+    p.load = clamp(p.load - randRange(0.5, 2), 10, 95);
+  });
+
+  renderMultiPods();
+  renderAgentLanes();
+  if (multiState.tick % 5 === 0) renderCacheSharing();
+}
+
+function startMultiAnimation() {
+  stopMultiAnimation();
+  multiTimer = setInterval(() => {
+    if (!multiPlaying) return;
+    multiTick();
+  }, 800);
+}
+
+function stopMultiAnimation() {
+  if (multiTimer) { clearInterval(multiTimer); multiTimer = null; }
+}
+
+function toggleMultiPlay() {
+  multiPlaying = !multiPlaying;
+  const btn = document.getElementById('multiPlayBtn');
+  btn.textContent = multiPlaying ? 'PAUSE' : 'PLAY';
+  btn.classList.toggle('active', multiPlaying);
+}
+
+function resetMultiAgent() {
+  stopMultiAnimation();
+  multiPlaying = true;
+  document.getElementById('multiPlayBtn').textContent = 'PAUSE';
+  document.getElementById('multiPlayBtn').classList.add('active');
+  initMultiAgent();
+}
+
+
+// ================================================================
+// MODE: AGENT BUILDER
+// ================================================================
+
+const BUILDER_PROMPTS = {
+  code: { name: 'Code Assistant', prefixHash: 'c0de7a5e', steps: ['Parse request', 'Reason about approach', 'Select tools', '{tools}', 'Generate code', 'Validate output', 'Return response'] },
+  research: { name: 'Research Agent', prefixHash: 'r35ea4c8', steps: ['Parse query', 'Plan research strategy', 'Select sources', '{tools}', 'Analyze findings', 'Cross-reference', 'Synthesize report'] },
+  support: { name: 'Customer Support', prefixHash: '5up904t1', steps: ['Classify intent', 'Retrieve context', '{tools}', 'Draft response', 'Check policy compliance', 'Personalize', 'Send response'] }
+};
+
+let builderTimer = null;
+
+function updateWorkflowPreview() {
+  const prompt = document.getElementById('builderPrompt').value;
+  const config = BUILDER_PROMPTS[prompt];
+  const tools = getSelectedTools();
+
+  const steps = config.steps.map(s => {
+    if (s === '{tools}') return tools.map(t => t + '()');
+    return [s];
+  }).flat();
+
+  const preview = document.getElementById('workflowPreview');
+  preview.innerHTML = steps.map((s, i) => '<div class="ws-step"><span class="ws-num">' + (i + 1) + '</span> ' + s + '</div>').join('');
+}
+
+function getSelectedTools() {
+  return Array.from(document.querySelectorAll('.tool-check input:checked')).map(cb => cb.value);
+}
+
+function runBuilderAgent() {
+  if (builderTimer) { clearTimeout(builderTimer); builderTimer = null; }
+
+  const prompt = document.getElementById('builderPrompt').value;
+  const config = BUILDER_PROMPTS[prompt];
+  const tools = getSelectedTools();
+  const prefixHash = config.prefixHash;
+
+  const steps = config.steps.map(s => {
+    if (s === '{tools}') return tools.map(t => ({ label: t + '()', type: 'tool' }));
+    return [{ label: s, type: 'llm' }];
+  }).flat();
+
+  document.getElementById('builderStatus').textContent = 'Executing...';
+  document.getElementById('builderStatus').style.color = 'var(--amber)';
+
+  const container = document.getElementById('builderSpans');
+  container.innerHTML = '';
+
+  let currentTime = 0;
+  const totalEstimate = steps.length * 300;
+  let revealIdx = 0;
+
+  function revealNext() {
+    if (revealIdx >= steps.length) {
+      document.getElementById('builderStatus').textContent = 'Complete';
+      document.getElementById('builderStatus').style.color = 'var(--green)';
+      return;
+    }
+
+    const step = steps[revealIdx];
+    const isLLM = step.type === 'llm';
+    let cacheType, ttft, targetPod;
+
+    if (isLLM) {
+      cacheType = revealIdx === 0 ? 'miss' : (revealIdx === 1 ? 'partial' : (Math.random() < 0.85 ? 'hit' : 'partial'));
+      ttft = ttftForType(cacheType);
+      targetPod = cacheType === 'hit' ? 2 : randInt(0, 7);
+    } else {
+      cacheType = null;
+      ttft = 0;
+      targetPod = null;
+    }
+
+    const duration = (isLLM ? 150 : 300) + Math.round(randRange(-30, 80)) + (isLLM ? ttft : 0);
+    const startMs = currentTime;
+    currentTime += duration + randInt(10, 40);
+
+    let barClass = 'span-bar animating';
+    if (step.type === 'tool') barClass += ' tool-exec';
+    else if (cacheType === 'hit') barClass += ' cache-hit';
+    else if (cacheType === 'partial') barClass += ' cache-partial';
+    else barClass += ' cache-miss';
+
+    const leftPct = startMs / (totalEstimate || 1) * 100;
+    const widthPct = Math.max(1, duration / (totalEstimate || 1) * 100);
+
+    let tagHTML = '';
+    if (cacheType === 'hit') tagHTML = ' <span class="tag tag-green">HIT</span>';
+    else if (cacheType === 'partial') tagHTML = ' <span class="tag tag-amber">PARTIAL</span>';
+    else if (cacheType === 'miss') tagHTML = ' <span class="tag tag-red">MISS</span>';
+    else tagHTML = ' <span class="tag tag-purple">TOOL</span>';
+
+    const spanHTML = '<div class="trace-span">' +
+      '<div class="span-label" style="width:160px;min-width:160px;">' +
+        '<span class="span-name">' + step.label + '</span>' + tagHTML +
+      '</div>' +
+      '<div class="span-bar-area">' +
+        '<div class="' + barClass + '" style="left:' + leftPct + '%;width:' + widthPct + '%;">' +
+          (targetPod !== null ? POD_NAMES[targetPod] + ' | ' + ttft + 'ms' : duration + 'ms') +
+        '</div>' +
+        '<span class="span-bar-timing" style="left:' + (leftPct + widthPct) + '%;">' + duration + 'ms</span>' +
+      '</div>' +
+    '</div>';
+
+    container.insertAdjacentHTML('beforeend', spanHTML);
+    revealIdx++;
+    builderTimer = setTimeout(revealNext, 500);
+  }
+
+  revealNext();
+}
+
+// Builder event listeners
+document.getElementById('builderPrompt').addEventListener('change', updateWorkflowPreview);
+document.querySelectorAll('.tool-check input').forEach(cb => cb.addEventListener('change', updateWorkflowPreview));
+
+
+// ================================================================
+// GLOBAL METRICS
+// ================================================================
+
+function updateGlobalMetrics() {
+  if (!traceData) return;
+  const revealed = traceData.spans.slice(0, traceRevealIndex);
+  const llmSpans = revealed.filter(s => s.type === 'llm' || s.type === 'mcp');
+
+  const totalExec = revealed.length > 0 ? revealed[revealed.length - 1].startMs + revealed[revealed.length - 1].durationMs : 0;
+  const hits = llmSpans.filter(s => s.cacheType === 'hit').length;
+  const cacheRate = llmSpans.length > 0 ? Math.round(hits / llmSpans.length * 100) : 0;
+  const avgTTFT = llmSpans.length > 0 ? Math.round(llmSpans.reduce((s, sp) => s + sp.ttft, 0) / llmSpans.length) : 0;
+
+  document.getElementById('metExecTime').textContent = totalExec > 0 ? totalExec + 'ms' : '--';
+  document.getElementById('metExecTime').className = 'mc-val' + (totalExec > 2000 ? ' warn' : ' good');
+  document.getElementById('metExecSub').textContent = revealed.length + ' steps completed';
+
+  document.getElementById('metCacheRate').textContent = cacheRate > 0 ? cacheRate + '%' : '--';
+  document.getElementById('metCacheRate').className = 'mc-val' + (cacheRate > 60 ? ' good' : (cacheRate > 30 ? ' warn' : ''));
+  document.getElementById('metCacheSub').textContent = hits + '/' + llmSpans.length + ' cache hits';
+
+  document.getElementById('metTTFT').textContent = avgTTFT > 0 ? avgTTFT + 'ms' : '--';
+  document.getElementById('metTTFT').className = 'mc-val' + (avgTTFT < 120 ? ' good' : (avgTTFT < 300 ? ' warn' : ' bad'));
+  document.getElementById('metTTFTSub').textContent = avgTTFT > 0 ? (avgTTFT < 120 ? 'excellent' : (avgTTFT < 300 ? 'moderate' : 'slow')) : '--';
+
+  document.getElementById('metThroughput').textContent = revealed.length > 0 ? Math.round(randRange(3800, 5200)).toLocaleString() : '--';
+
+  const randomTotalTTFT = llmSpans.length * 450;
+  const llmdTotalTTFT = llmSpans.reduce((s, sp) => s + sp.ttft, 0);
+  const savings = randomTotalTTFT > 0 ? Math.round((1 - llmdTotalTTFT / randomTotalTTFT) * 100) : 0;
+  document.getElementById('metSavings').textContent = savings > 0 ? savings + '%' : '--';
+}
+
+
+// ================================================================
+// MODE SWITCHING
+// ================================================================
+
+let currentMode = 'trace';
+
+document.querySelectorAll('.mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const mode = tab.dataset.mode;
+    if (mode === currentMode) return;
+
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + mode).classList.add('active');
+
+    currentMode = mode;
+
+    // Initialize mode if needed
+    if (mode === 'comparison' && !cmpData) initComparison();
+    if (mode === 'multi' && !multiState) initMultiAgent();
+    if (mode === 'builder') updateWorkflowPreview();
   });
 });
 
-// Speed slider
-document.getElementById('speedSlider').addEventListener('input', function() {
-  speedMult = parseFloat(this.value);
-});
+// Expose to inline handlers
+window.toggleTracePlay = toggleTracePlay;
+window.rerunTrace = rerunTrace;
+window.toggleCmpPlay = toggleCmpPlay;
+window.rerunComparison = rerunComparison;
+window.toggleMultiPlay = toggleMultiPlay;
+window.resetMultiAgent = resetMultiAgent;
+window.runBuilderAgent = runBuilderAgent;
 
-// ── Boot ────────────────────────────────────────────────────────
 
-function init() {
-  initMetrics();
-  resizeCanvases();
-  resetSim();
-  animId = requestAnimationFrame(animate);
-}
+// ================================================================
+// BOOT
+// ================================================================
 
-window.addEventListener('resize', resizeCanvases);
-init();
+initTrace();
+updateWorkflowPreview();
 </script>
 </body>
 </html>
