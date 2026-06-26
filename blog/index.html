@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why AI Agents Need llm-d: The Inference Pattern Nobody Planned For</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #0a0e1a;
+            color: #e0e0e0;
+            font-family: 'Red Hat Text', sans-serif;
+            font-weight: 400;
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        .gradient-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #00d4ff, #7f52ff);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .nav-bar {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 0;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-bar a {
+            color: #00d4ff;
+            text-decoration: none;
+            font-family: 'Red Hat Text', sans-serif;
+            font-weight: 500;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+            transition: opacity 0.2s;
+        }
+
+        .nav-bar a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        article {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .header {
+            margin-bottom: 3rem;
+            padding-top: 1rem;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .header-brand img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .header-brand span {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #ffffff;
+        }
+
+        h1 {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            color: #ffffff;
+            line-height: 1.2;
+            margin-bottom: 1.25rem;
+        }
+
+        .byline {
+            font-size: 1rem;
+            color: #8892a8;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .date {
+            font-size: 0.9rem;
+            color: #5a6478;
+        }
+
+        h2 {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: #ffffff;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        h3 {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #ffffff;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        p {
+            margin-bottom: 1.25rem;
+        }
+
+        a {
+            color: #00d4ff;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        a:hover {
+            text-decoration: underline;
+            opacity: 0.85;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background: #141824;
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-size: 0.92em;
+            color: #c8d0e0;
+        }
+
+        .concept-card {
+            background: #111628;
+            border: 1px solid #1e2540;
+            border-radius: 10px;
+            padding: 1.5rem 1.75rem;
+            margin: 1.75rem 0;
+        }
+
+        .concept-card h3 {
+            margin-top: 0;
+            font-size: 1.15rem;
+        }
+
+        .concept-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1.75rem 0;
+        }
+
+        .stat-box {
+            flex: 1;
+            min-width: 180px;
+            background: #111628;
+            border: 1px solid #1e2540;
+            border-radius: 10px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .stat-box .number {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            color: #00d4ff;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-box .label {
+            font-size: 0.85rem;
+            color: #8892a8;
+            font-weight: 500;
+        }
+
+        ul {
+            margin-bottom: 1.25rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #1e2540, transparent);
+            margin: 2.5rem 0;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, #111628 0%, #141830 100%);
+            border: 1px solid #1e2540;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2.5rem 0;
+            text-align: center;
+        }
+
+        .cta-section h3 {
+            margin-top: 0;
+            font-size: 1.4rem;
+        }
+
+        .cta-links {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.25rem;
+        }
+
+        .cta-links a {
+            display: inline-block;
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: transform 0.15s, opacity 0.2s;
+        }
+
+        .cta-links a:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .cta-primary {
+            background: #00d4ff;
+            color: #0a0e1a !important;
+        }
+
+        .cta-secondary {
+            border: 1px solid #00d4ff;
+            color: #00d4ff !important;
+        }
+
+        .footer-attribution {
+            text-align: center;
+            padding: 2rem 1.5rem 3rem;
+            color: #5a6478;
+            font-size: 0.9rem;
+        }
+
+        .footer-attribution .name {
+            color: #8892a8;
+            font-weight: 500;
+        }
+
+        .bottom-nav {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1.5rem 1rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .bottom-nav a {
+            color: #00d4ff;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .bottom-nav a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                font-size: 16px;
+            }
+
+            article {
+                padding: 1.5rem 1rem 3rem;
+            }
+
+            .nav-bar {
+                padding: 1.5rem 1rem 0;
+            }
+
+            .stat-box .number {
+                font-size: 1.4rem;
+            }
+
+            .cta-links {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .cta-links a {
+                width: 100%;
+                max-width: 280px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="gradient-bar"></div>
+
+<nav class="nav-bar">
+    <a href="https://markellr-redhat.github.io/llm-d-content-hub/">Back to Content Hub</a>
+    <a href="../">Open Interactive Visualizer</a>
+</nav>
+
+<article>
+    <div class="header">
+        <div class="header-brand">
+            <img src="https://llm-d.ai/img/llm-d-icon.png" alt="llm-d icon">
+            <span>llm-d</span>
+        </div>
+        <h1>Why AI Agents Need llm-d: The Inference Pattern Nobody Planned For</h1>
+        <div class="byline">Markell Rawls, Developer Advocate, Red Hat</div>
+        <div class="date">June 2025</div>
+    </div>
+
+    <p>I built an AI agent that worked beautifully in dev. It could research a topic, synthesize findings from multiple sources, answer follow-up questions, and even trigger downstream workflows. It felt like magic -- the kind of demo that makes a conference room go quiet. Then I deployed it to production, watched real users hit it, and saw the inference bill.</p>
+
+    <p>The cost was not what I expected. Neither was the latency. The numbers did not just creep up from my dev environment estimates -- they leaped. And as I dug in, I realized the problem was not the model, the prompts, or even the traffic volume. The problem was how the infrastructure was routing my agent's requests. Every single inference call was being treated like a stateless web request, scattered across GPU pods with zero awareness of what came before. My agent's carefully orchestrated reasoning chains were being shredded by a load balancer that had no idea what it was doing.</p>
+
+    <p>That experience sent me down a rabbit hole. What I found on the other end was <code>llm-d</code> -- and a fundamentally different way to think about inference routing for agentic workloads.</p>
+
+    <h2>Agent Traffic Is Not API Traffic</h2>
+
+    <p>If you have been building traditional API services, you have internalized a mental model: requests are mostly independent, roughly uniform in cost, and can be distributed across backends with simple strategies. Round-robin works. Least-connections works. These heuristics have powered the internet for decades.</p>
+
+    <p>AI agents break every one of those assumptions.</p>
+
+    <div class="concept-card">
+        <h3>Multi-Turn Conversations</h3>
+        <p>When a user has a five-turn conversation with an agent, that is not one inference call -- it is five, each one carrying the growing context of everything that came before. Turn one might be 500 tokens. Turn five might be 4,000. Each turn is a separate HTTP request, and each one benefits enormously from landing on a GPU pod that already has the previous turns' computed context in memory.</p>
+    </div>
+
+    <div class="concept-card">
+        <h3>Tool-Calling Chains</h3>
+        <p>Modern agents do not just generate text. They call tools. An agent handling a research question might call a search API, analyze the results, call a database, summarize its findings, then format a response. That is five or more inference calls from a single user request -- each building on the same base context. In the tool-calling pattern, the agent sends partial results back to the model repeatedly, and each round trip is a new inference request with a shared prefix.</p>
+    </div>
+
+    <div class="concept-card">
+        <h3>Burst Patterns</h3>
+        <p>Agents do not politely queue their requests and wait for responses. When an agent decides it needs to search three databases in parallel, it fires three inference calls simultaneously. When ten users trigger the same agent workflow in the same minute, you get burst patterns that look nothing like steady-state API traffic. The load is spiky, correlated, and unpredictable.</p>
+    </div>
+
+    <div class="concept-card">
+        <h3>Context Switching</h3>
+        <p>A single agent instance might be handling multiple users, each with different conversation histories, different cached contexts, and different topic domains. The infrastructure has to juggle all of these stateful sessions across a fleet of GPU pods, and getting it wrong means recomputing context from scratch -- the single most expensive operation in inference serving.</p>
+    </div>
+
+    <h2>The Hidden Cost: KV Cache Misses</h2>
+
+    <p>To understand why this matters, you need to understand one piece of GPU mechanics: the <code>KV cache</code>.</p>
+
+    <p>When a large language model processes your prompt, it computes attention keys and values for every token. These computed results -- the KV cache -- live in GPU memory. If your next request shares the same prefix (the same system prompt, the same conversation history, the same tool-call chain), the model can skip recomputing all of that and jump straight to the new tokens. This is the difference between a Time to First Token (TTFT) of 500 milliseconds or more and a TTFT under 100 milliseconds.</p>
+
+    <p>Now here is the problem: a standard Kubernetes load balancer -- round-robin, least-connections, random -- has no concept of KV cache state. It does not know which GPU pod has which context cached. It just distributes requests.</p>
+
+    <div class="stat-row">
+        <div class="stat-box">
+            <span class="number">~5%</span>
+            <span class="label">Cache hit rate with round-robin routing (agent workloads)</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">80-95%</span>
+            <span class="label">Cache hit rate with llm-d prefix-aware routing</span>
+        </div>
+    </div>
+
+    <p>For agent workloads, round-robin routing achieves roughly a 5% KV cache hit rate. That means 95% of your inference requests are cold starts -- the model recomputes the entire context from scratch, burning GPU cycles and wall-clock time. Your users feel it. Your infrastructure budget feels it.</p>
+
+    <h2>How llm-d Fixes This</h2>
+
+    <p><code>llm-d</code> is an inference gateway built for exactly this problem. It is not a model server -- it sits in front of your <code>vLLM</code> backends and makes routing decisions based on what is actually happening on the GPUs. Here is how it works.</p>
+
+    <h3>Prefix-Aware Routing</h3>
+
+    <p>When a request arrives, <code>llm-d</code> hashes the prompt prefix and matches it against a registry of which pods currently hold which cached prefixes. If pod 3 already has the first 2,000 tokens of this conversation cached in its KV store, the request goes to pod 3. Not randomly. Not round-robin. Intentionally, because that is where the work has already been done.</p>
+
+    <h3>Cache-Aware Scheduling</h3>
+
+    <p>The core intelligence lives in the <code>EPP</code> -- the Endpoint Picker Policy. The EPP maintains a real-time view of cache state across the entire fleet. It knows which pods hold which KV cache entries, how full each pod's cache is, and how recently each entry was accessed. This is not guesswork -- it is informed scheduling based on actual GPU memory state.</p>
+
+    <h3>Load-Aware Balancing</h3>
+
+    <p>Cache affinity alone would be dangerous. If one pod happens to cache a popular prefix, naive affinity would send all traffic there, overloading it while other pods sit idle. <code>llm-d</code> balances cache affinity against real-time load metrics. If the ideal pod is saturated, the request goes to the next-best option -- maybe a pod with a partial prefix match, or if necessary, a cold pod that can absorb the load. The system optimizes for throughput, not just cache hits.</p>
+
+    <h3>The Results</h3>
+
+    <div class="stat-row">
+        <div class="stat-box">
+            <span class="number">2-5x</span>
+            <span class="label">TTFT improvement</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">40-60%</span>
+            <span class="label">Fewer cold cache starts</span>
+        </div>
+    </div>
+
+    <p>In practice, this translates to TTFT improvements of 2-5x and a 40-60% reduction in cold cache starts. For the end user talking to your agent, the difference is palpable -- responses that felt sluggish become snappy. For your infrastructure team, it means fewer GPU pods doing redundant work, which translates directly to cost savings.</p>
+
+    <div class="divider"></div>
+
+    <h2>Why This Belongs in the CNCF Ecosystem</h2>
+
+    <p><code>llm-d</code> is a <a href="https://www.cncf.io/">CNCF Sandbox project</a>, and that matters for reasons beyond prestige. It means the project is built to work with the tools platform teams already use.</p>
+
+    <p>The EPP runs as a Kubernetes-native component, integrating with the <a href="https://gateway-api.sigs.k8s.io/">Gateway API</a> -- the same standard that is replacing Ingress for HTTP routing. If your team already manages Kubernetes clusters and understands Gateway API resources, deploying <code>llm-d</code> does not require learning an entirely new operational model. It extends what you already know.</p>
+
+    <p>It works with any <code>vLLM</code> backend, which means you are not locked into a specific model serving stack. Swap models, scale pods, upgrade vLLM versions -- the routing layer adapts. This composability is exactly the kind of thing the CNCF ecosystem is designed to foster: focused components that do one thing well and integrate cleanly with the rest of the stack.</p>
+
+    <p>For platform teams that are being asked to support AI workloads alongside traditional services, this is significant. You do not need to build a separate operational universe for inference. You extend your existing Kubernetes platform with inference-aware routing, and your existing monitoring, scaling, and deployment pipelines continue to work.</p>
+
+    <div class="divider"></div>
+
+    <h2>The Bigger Picture</h2>
+
+    <p>We are at an inflection point. The industry spent the last two years optimizing model training -- bigger clusters, faster interconnects, better parallelism strategies. That work matters. But the next wave of AI adoption is not about training. It is about inference at scale, and specifically about agentic inference, where the access patterns are fundamentally different from anything we have optimized for before.</p>
+
+    <p>Agents are not a niche use case. Every major cloud provider, every enterprise AI platform, and an enormous number of startups are building agent frameworks. The volume of inference traffic from agents is growing faster than the volume from direct human-to-model interactions. And all of that traffic has the same characteristics: multi-turn, tool-heavy, bursty, and deeply stateful.</p>
+
+    <p>The infrastructure layer has to catch up. Treating inference requests as stateless HTTP calls was fine when a user sent one question and got one answer. It falls apart when an agent sends thirty inference calls in ten seconds, each one depending on the context built by the ones before it.</p>
+
+    <p><code>llm-d</code> is one of the first projects to take this problem seriously at the routing layer. It is not the only piece of the puzzle -- you still need efficient model servers, smart autoscaling, and thoughtful prompt engineering. But without cache-aware routing, you are leaving performance and money on the table at the layer where it matters most: the moment a request meets a GPU.</p>
+
+    <div class="cta-section">
+        <h3>See It in Action</h3>
+        <p>I built an interactive visualizer that shows exactly how <code>llm-d</code> routes agent requests differently from traditional load balancers. Watch requests flow through the system, see cache hits light up, and compare the difference side by side.</p>
+        <div class="cta-links">
+            <a href="../" class="cta-primary">Open Interactive Visualizer</a>
+            <a href="https://markellr-redhat.github.io/llm-d-content-hub/" class="cta-secondary">Explore the Content Hub</a>
+        </div>
+    </div>
+
+</article>
+
+<nav class="bottom-nav">
+    <a href="https://markellr-redhat.github.io/llm-d-content-hub/">Back to Content Hub</a>
+    <a href="../">Open Interactive Visualizer</a>
+</nav>
+
+<div class="footer-attribution">
+    <span class="name">Markell Rawls</span> &middot; Developer Advocate &middot; Red Hat
+</div>
+
+</body>
+</html>

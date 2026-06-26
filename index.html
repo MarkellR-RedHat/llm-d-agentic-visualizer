@@ -4,28 +4,1237 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agentic Demand Visualizer | llm-d</title>
+<link rel="icon" type="image/png" href="https://llm-d.ai/img/llm-d-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500;700&family=Red+Hat+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Red Hat Text', sans-serif; background: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-  .card { background: #fff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 48px; max-width: 560px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-  .icon { width: 64px; height: 64px; margin: 0 auto 24px; }
-  h1 { font-family: 'Red Hat Display', sans-serif; font-size: 1.6rem; font-weight: 900; color: #212121; margin-bottom: 12px; }
-  p { color: #666; font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
-  .badge { display: inline-block; font-family: 'Red Hat Display', sans-serif; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: #f3e8f3; color: #7f317f; padding: 4px 14px; border-radius: 100px; }
-  a { color: #cc0000; text-decoration: none; font-weight: 500; }
-  a:hover { text-decoration: underline; }
+/* ================================================================
+   AGENTIC DEMAND VISUALIZER
+   Air-traffic-control / mission-control aesthetic
+   ================================================================ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0e1a;
+  --bg-card: rgba(14, 18, 32, 0.92);
+  --border: rgba(0, 212, 255, 0.12);
+  --border-dim: rgba(0, 212, 255, 0.06);
+  --cyan: #00d4ff;
+  --green: #00ff88;
+  --red: #ff4455;
+  --amber: #ffaa00;
+  --text: #e0e6f0;
+  --text-dim: #6b7a99;
+  --text-bright: #ffffff;
+  --font-display: 'Red Hat Display', sans-serif;
+  --font-text: 'Red Hat Text', sans-serif;
+  --font-mono: 'Red Hat Mono', 'Consolas', monospace;
+}
+
+html { font-size: 14px; }
+
+body {
+  font-family: var(--font-text);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0, 0, 0, 0.025) 2px, rgba(0, 0, 0, 0.025) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Top accent line ─────────────────────────────────── */
+.top-accent {
+  height: 2px;
+  background: linear-gradient(90deg, var(--cyan), #7f52ff, var(--cyan));
+  opacity: 0.7;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border-dim);
+  background: rgba(10, 14, 26, 0.95);
+  backdrop-filter: blur(8px);
+}
+
+.hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hdr-left img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+
+.hdr-left h1 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--text-bright);
+  letter-spacing: -0.01em;
+}
+
+.hdr-left .sub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.hdr-right {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.hdr-right a {
+  color: var(--cyan);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.hdr-right a:hover {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: var(--cyan);
+}
+
+/* ── Scenario bar ────────────────────────────────────── */
+.scenario-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 10px;
+  padding: 16px 32px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-dim);
+  background: rgba(10, 14, 26, 0.9);
+}
+
+.scenario-btn {
+  font-family: var(--font-text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+
+.scenario-btn:hover {
+  border-color: var(--cyan);
+  color: var(--text);
+}
+
+.scenario-btn.active {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.15);
+}
+
+.scenario-desc {
+  position: relative;
+  z-index: 1;
+  padding: 8px 32px 12px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-dim);
+  background: rgba(10, 14, 26, 0.9);
+  min-height: 32px;
+  line-height: 1.5;
+}
+
+/* ── Controls ────────────────────────────────────────── */
+.controls {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 10px;
+  padding: 10px 32px;
+  align-items: center;
+  background: rgba(10, 14, 26, 0.9);
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.ctrl-btn {
+  font-family: var(--font-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(0, 212, 255, 0.06);
+  color: var(--cyan);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrl-btn:hover {
+  background: rgba(0, 212, 255, 0.15);
+}
+
+.ctrl-btn.active {
+  background: rgba(0, 212, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}
+
+.speed-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-left: 14px;
+}
+
+.speed-slider {
+  width: 100px;
+  accent-color: var(--cyan);
+}
+
+/* ── Main comparison grid ────────────────────────────── */
+.main {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: 480px;
+}
+
+.panel {
+  padding: 16px;
+  position: relative;
+}
+
+.panel:first-child {
+  border-right: 1px solid var(--border-dim);
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.panel-naive .panel-title {
+  color: var(--red);
+  background: rgba(255, 68, 85, 0.08);
+  border: 1px solid rgba(255, 68, 85, 0.15);
+}
+
+.panel-llmd .panel-title {
+  color: var(--green);
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.15);
+}
+
+.panel-badge {
+  font-size: 0.62rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.panel-naive .panel-badge {
+  background: rgba(255, 68, 85, 0.12);
+  border: 1px solid rgba(255, 68, 85, 0.25);
+  color: var(--red);
+}
+
+.panel-llmd .panel-badge {
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  color: var(--green);
+}
+
+.canvas-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, rgba(0, 212, 255, 0.03), transparent 70%);
+  border: 1px solid var(--border-dim);
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Pod metrics ─────────────────────────────────────── */
+.pod-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pod-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+}
+
+.pod-card .pod-name {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.pod-card .metric {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  margin: 2px 0;
+}
+
+.pod-card .metric .val {
+  font-weight: 700;
+}
+
+.metric-label {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+
+/* ── Aggregate bar ───────────────────────────────────── */
+.agg-bar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border-dim);
+  background: rgba(10, 14, 26, 0.95);
+}
+
+.agg-side {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  padding: 14px 16px;
+}
+
+.agg-side:first-child {
+  border-right: 1px solid var(--border-dim);
+}
+
+.agg-item {
+  text-align: center;
+  padding: 4px;
+}
+
+.agg-item .agg-val {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.agg-item .agg-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.agg-naive .agg-val { color: var(--red); }
+.agg-llmd .agg-val { color: var(--green); }
+
+/* ── Footer ──────────────────────────────────────────── */
+footer {
+  position: relative;
+  z-index: 1;
+  padding: 20px 32px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-dim);
+  background: rgba(10, 14, 26, 0.95);
+  line-height: 1.8;
+}
+
+footer a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.cncf-note {
+  font-size: 0.68rem;
+  color: rgba(107, 122, 153, 0.6);
+  margin-top: 6px;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .panel:first-child { border-right: none; border-bottom: 1px solid var(--border-dim); }
+  .agg-bar { grid-template-columns: 1fr; }
+  .agg-side:first-child { border-right: none; border-bottom: 1px solid var(--border-dim); }
+  header { flex-direction: column; gap: 10px; text-align: center; }
+  .scenario-bar { justify-content: center; }
+}
+
+@media (max-width: 600px) {
+  .pod-metrics { grid-template-columns: repeat(2, 1fr); }
+  .agg-side { grid-template-columns: repeat(2, 1fr); }
+}
 </style>
 </head>
 <body>
-<div class="card">
-  <img class="icon" src="https://llm-d.ai/img/llm-d-icon.png" alt="llm-d">
-  <h1>Agentic Demand Visualizer</h1>
-  <p>Visualize agent inference patterns and routing decisions.</p>
-  <span class="badge">Coming Soon</span>
-  <p style="margin-top:24px;font-size:0.82rem;color:#999;">Part of the <a href="https://markellr-redhat.github.io/llm-d-content-hub/">llm-d Content Hub</a></p>
+<div class="top-accent"></div>
+
+<header>
+  <div class="hdr-left">
+    <img src="https://llm-d.ai/img/llm-d-icon.png" alt="llm-d">
+    <div>
+      <h1>Agentic Demand Visualizer</h1>
+      <div class="sub">AI Agent Inference Routing -- Side-by-Side Comparison</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <a href="blog/">Blog</a>
+    <a href="https://markellr-redhat.github.io/llm-d-content-hub/">Content Hub</a>
+    <a href="https://llm-d.ai" target="_blank" rel="noopener">llm-d.ai</a>
+  </div>
+</header>
+
+<div class="scenario-bar" id="scenarioBar">
+  <button class="scenario-btn active" data-scenario="multiturn">Multi-Turn Chat</button>
+  <button class="scenario-btn" data-scenario="toolchain">Tool-Calling Chain</button>
+  <button class="scenario-btn" data-scenario="burst">Burst Traffic</button>
+  <button class="scenario-btn" data-scenario="context">Context Switching</button>
 </div>
+<div class="scenario-desc" id="scenarioDesc">
+  Agent sends follow-up questions in conversation. Without llm-d, each turn hits a random pod with cold cache. With llm-d, sticky sessions keep the conversation on the same pod for cache hits.
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn active" id="btnPlay" onclick="togglePlay()">PAUSE</button>
+  <button class="ctrl-btn" id="btnReset" onclick="resetSim()">RESET</button>
+  <span class="speed-label">Speed</span>
+  <input type="range" class="speed-slider" id="speedSlider" min="0.5" max="3" step="0.25" value="1">
+</div>
+
+<div class="main">
+  <div class="panel panel-naive">
+    <div class="panel-title">
+      Naive Round-Robin
+      <span class="panel-badge">No Optimization</span>
+    </div>
+    <div class="canvas-wrap"><canvas id="cvNaive" width="600" height="420"></canvas></div>
+    <div class="pod-metrics" id="metricsNaive"></div>
+  </div>
+  <div class="panel panel-llmd">
+    <div class="panel-title">
+      llm-d Cache-Aware
+      <span class="panel-badge">Intelligent Routing</span>
+    </div>
+    <div class="canvas-wrap"><canvas id="cvLlmd" width="600" height="420"></canvas></div>
+    <div class="pod-metrics" id="metricsLlmd"></div>
+  </div>
+</div>
+
+<div class="agg-bar">
+  <div class="agg-side agg-naive" id="aggNaive"></div>
+  <div class="agg-side agg-llmd" id="aggLlmd"></div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="https://markellr-redhat.github.io/llm-d-content-hub/">llm-d Content Hub</a>
+    <a href="blog/">Blog</a>
+    <a href="https://llm-d.ai" target="_blank" rel="noopener">llm-d.ai</a>
+  </div>
+  <div>Markell Rawls &middot; Developer Advocate &middot; Red Hat</div>
+  <div class="cncf-note">llm-d is a CNCF Sandbox project for distributed LLM inference routing</div>
+</footer>
+
+<script>
+// ================================================================
+// AGENTIC DEMAND VISUALIZER
+// Pure JavaScript -- single self-contained file
+// Air-traffic-control aesthetic with Canvas animation
+// ================================================================
+
+// ── Scenario Configuration ──────────────────────────────────────
+
+const SCENARIOS = {
+  multiturn: {
+    name: 'Multi-Turn Chat',
+    desc: 'Agent sends follow-up questions in conversation. Without llm-d, each turn hits a random pod with cold cache. With llm-d, sticky sessions keep the conversation on the same pod for cache hits.',
+    agentCount: 3,
+    agentLabels: ['Agent A', 'Agent B', 'Agent C'],
+    requestsPerWave: 3,
+    waves: 6,
+    waveDelay: 1800,
+    naive: { cacheHitProb: 0.05, stickyPods: false, queueBias: [1, 1, 1, 1] },
+    llmd:  { cacheHitProb: 0.92, stickyPods: true,  queueBias: [1, 1, 1, 1] }
+  },
+  toolchain: {
+    name: 'Tool-Calling Chain',
+    desc: 'Agent calls tools in sequence: search, analyze, summarize. Without llm-d, each step scatters to different pods losing context. With llm-d, prefix-aware routing keeps related steps on the same pod.',
+    agentCount: 3,
+    agentLabels: ['Search', 'Analyze', 'Summarize'],
+    requestsPerWave: 4,
+    waves: 5,
+    waveDelay: 1600,
+    naive: { cacheHitProb: 0.08, stickyPods: false, queueBias: [1, 1, 1, 1] },
+    llmd:  { cacheHitProb: 0.88, stickyPods: true,  queueBias: [1, 1, 1, 1] }
+  },
+  burst: {
+    name: 'Burst Traffic',
+    desc: '20 agents fire requests simultaneously. Without llm-d, random distribution overloads some pods while others idle. With llm-d, load-aware and cache-aware balancing distributes requests evenly.',
+    agentCount: 5,
+    agentLabels: ['Swarm 1', 'Swarm 2', 'Swarm 3', 'Swarm 4', 'Swarm 5'],
+    requestsPerWave: 20,
+    waves: 3,
+    waveDelay: 3000,
+    naive: { cacheHitProb: 0.06, stickyPods: false, queueBias: [3, 0.5, 2.5, 0.4] },
+    llmd:  { cacheHitProb: 0.75, stickyPods: false, queueBias: [1, 1, 1, 1] }
+  },
+  context: {
+    name: 'Context Switching',
+    desc: 'Agent switches between topics (code review, docs, testing). Without llm-d, no cache benefit anywhere. With llm-d, requests route back to pods that already have relevant context cached.',
+    agentCount: 3,
+    agentLabels: ['Topic A', 'Topic B', 'Topic C'],
+    requestsPerWave: 4,
+    waves: 5,
+    waveDelay: 1700,
+    naive: { cacheHitProb: 0.04, stickyPods: false, queueBias: [1, 1, 1, 1] },
+    llmd:  { cacheHitProb: 0.85, stickyPods: true,  queueBias: [1, 1, 1, 1] }
+  }
+};
+
+const POD_LABELS = ['GPU-A', 'GPU-B', 'GPU-C', 'GPU-D'];
+
+const C = {
+  green: '#00ff88',
+  red: '#ff4455',
+  amber: '#ffaa00',
+  cyan: '#00d4ff',
+  bg: '#0a0e1a',
+  grid: 'rgba(0, 212, 255, 0.04)',
+  podFill: 'rgba(14, 18, 32, 0.92)',
+  textDim: '#4a5a78',
+  textMid: '#8892a8',
+  textBright: '#e0e6f0'
+};
+
+// ── Global state ────────────────────────────────────────────────
+
+let currentScenario = 'multiturn';
+let playing = true;
+let speedMult = 1;
+let simTime = 0;
+let lastTime = 0;
+let animId = null;
+
+// ── Canvas refs ─────────────────────────────────────────────────
+
+const cvN = document.getElementById('cvNaive');
+const cvL = document.getElementById('cvLlmd');
+const ctxN = cvN.getContext('2d');
+const ctxL = cvL.getContext('2d');
+
+function resizeCanvases() {
+  const wrap = cvN.parentElement;
+  const w = wrap.clientWidth;
+  const h = Math.max(360, Math.min(440, w * 0.72));
+  [cvN, cvL].forEach(c => {
+    c.width = w * 2;
+    c.height = h * 2;
+    c.style.height = h + 'px';
+  });
+}
+
+// ── Side state factory ──────────────────────────────────────────
+
+function createSideState() {
+  return {
+    requests: [],
+    pods: POD_LABELS.map(() => ({
+      queue: 0,
+      cacheHits: 0,
+      totalReqs: 0,
+      ttftSum: 0,
+      ttftCount: 0,
+      glow: 0,
+      peakQueue: 0
+    })),
+    agg: { tokensPerSec: 0, avgTTFT: 0, cacheRate: 0, activeReqs: 0 },
+    nextWave: 0,
+    wavesSent: 0,
+    stickyMap: {}
+  };
+}
+
+let naiveState, llmdState;
+
+// ── Initialize metric HTML ──────────────────────────────────────
+
+function initMetrics() {
+  ['metricsNaive', 'metricsLlmd'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = POD_LABELS.map((name, i) => `
+      <div class="pod-card" id="${id}_pod${i}">
+        <div class="pod-name">${name}</div>
+        <div class="metric"><span class="val" id="${id}_q${i}">0</span> <span class="metric-label">queue</span></div>
+        <div class="metric"><span class="val" id="${id}_c${i}">0%</span> <span class="metric-label">cache</span></div>
+        <div class="metric"><span class="val" id="${id}_t${i}">--</span> <span class="metric-label">TTFT</span></div>
+      </div>
+    `).join('');
+  });
+
+  ['aggNaive', 'aggLlmd'].forEach(id => {
+    document.getElementById(id).innerHTML = `
+      <div class="agg-item"><div class="agg-val" id="${id}_tps">0</div><div class="agg-label">tokens/sec</div></div>
+      <div class="agg-item"><div class="agg-val" id="${id}_ttft">--</div><div class="agg-label">avg TTFT</div></div>
+      <div class="agg-item"><div class="agg-val" id="${id}_cache">0%</div><div class="agg-label">cache hit</div></div>
+      <div class="agg-item"><div class="agg-val" id="${id}_active">0</div><div class="agg-label">active</div></div>
+    `;
+  });
+}
+
+// ── Request creation ────────────────────────────────────────────
+
+function createRequest(side, agentIdx, podIdx, cacheHit) {
+  const cv = side === 'naive' ? cvN : cvL;
+  const W = cv.width;
+  const H = cv.height;
+  const sc = SCENARIOS[currentScenario];
+  const agentCount = sc.agentCount;
+
+  // Agent x position (spread across top)
+  const agentX = W * 0.12 + (agentIdx / Math.max(1, agentCount - 1)) * (W * 0.76);
+  const agentY = H * 0.08;
+
+  // Pod x position
+  const podX = W * 0.15 + (podIdx / 3) * (W * 0.7);
+  const podY = H * 0.82;
+
+  // TTFT depends on cache hit
+  const ttft = cacheHit
+    ? 35 + Math.random() * 65
+    : 280 + Math.random() * 420;
+
+  // Curved control point with some randomness
+  const cpx = (agentX + podX) / 2 + (Math.random() - 0.5) * W * 0.14;
+  const cpy = H * 0.38 + (Math.random() - 0.5) * H * 0.12;
+
+  return {
+    ax: agentX, ay: agentY,
+    px: podX, py: podY,
+    cpx: cpx, cpy: cpy,
+    t: 0,
+    speed: (0.35 + Math.random() * 0.25) / 1000,
+    cacheHit: cacheHit,
+    podIdx: podIdx,
+    agentIdx: agentIdx,
+    ttft: ttft,
+    color: cacheHit ? C.green : C.red,
+    arrived: false,
+    done: false,
+    fadeOut: 1,
+    delay: 0,
+    waiting: false,
+    trail: []
+  };
+}
+
+// ── Bezier interpolation ────────────────────────────────────────
+
+function bezier(ax, ay, cpx, cpy, px, py, t) {
+  const u = 1 - t;
+  return {
+    x: u * u * ax + 2 * u * t * cpx + t * t * px,
+    y: u * u * ay + 2 * u * t * cpy + t * t * py
+  };
+}
+
+// ── Wave spawning ───────────────────────────────────────────────
+
+function spawnWave(state, config, isLlmd) {
+  const sc = SCENARIOS[currentScenario];
+  const count = sc.requestsPerWave;
+
+  for (let i = 0; i < count; i++) {
+    const agentIdx = i % sc.agentCount;
+    let podIdx;
+    let cacheHit;
+
+    if (isLlmd && config.stickyPods) {
+      // Sticky: same agent keeps going to same pod
+      if (state.stickyMap[agentIdx] === undefined) {
+        state.stickyMap[agentIdx] = agentIdx % 4;
+      }
+      podIdx = state.stickyMap[agentIdx];
+      // First request from each agent is a cache miss, subsequent are hits
+      cacheHit = state.wavesSent > 0 && Math.random() < config.cacheHitProb;
+    } else if (isLlmd) {
+      // Load-aware: pick least-loaded pod
+      let minQ = Infinity;
+      let candidates = [];
+      state.pods.forEach((p, idx) => {
+        if (p.queue < minQ) { minQ = p.queue; candidates = [idx]; }
+        else if (p.queue === minQ) { candidates.push(idx); }
+      });
+      podIdx = candidates[Math.floor(Math.random() * candidates.length)];
+      cacheHit = state.wavesSent > 0 && Math.random() < config.cacheHitProb;
+    } else {
+      // Naive: weighted random (biased for burst scenario to show imbalance)
+      const bias = config.queueBias;
+      const total = bias.reduce((a, b) => a + b, 0);
+      let r = Math.random() * total;
+      let acc = 0;
+      podIdx = 0;
+      for (let j = 0; j < 4; j++) {
+        acc += bias[j];
+        if (r < acc) { podIdx = j; break; }
+      }
+      cacheHit = Math.random() < config.cacheHitProb;
+    }
+
+    const req = createRequest(isLlmd ? 'llmd' : 'naive', agentIdx, podIdx, cacheHit);
+    req.delay = i * 100 + Math.random() * 80;
+    req.waiting = true;
+    state.requests.push(req);
+    state.pods[podIdx].queue++;
+    state.pods[podIdx].peakQueue = Math.max(state.pods[podIdx].peakQueue, state.pods[podIdx].queue);
+  }
+}
+
+// ── Side update ─────────────────────────────────────────────────
+
+function updateSide(state, config, dt, isLlmd) {
+  const sc = SCENARIOS[currentScenario];
+  const waveTime = sc.waveDelay / speedMult;
+
+  // Spawn waves on schedule
+  if (state.wavesSent < sc.waves && simTime >= state.nextWave) {
+    spawnWave(state, config, isLlmd);
+    state.wavesSent++;
+    state.nextWave = simTime + waveTime;
+  }
+
+  // Update each request
+  let activeCount = 0;
+
+  for (let i = state.requests.length - 1; i >= 0; i--) {
+    const req = state.requests[i];
+    if (req.done) continue;
+
+    if (req.waiting) {
+      req.delay -= dt * speedMult;
+      if (req.delay <= 0) req.waiting = false;
+      activeCount++;
+      continue;
+    }
+
+    // Move along path
+    req.t += req.speed * dt * speedMult;
+
+    // Store trail points
+    if (req.t < 1 && req.trail.length < 8) {
+      const pos = bezier(req.ax, req.ay, req.cpx, req.cpy, req.px, req.py, req.t);
+      req.trail.push({ x: pos.x, y: pos.y, age: 0 });
+    }
+
+    // Age trail points
+    for (let j = req.trail.length - 1; j >= 0; j--) {
+      req.trail[j].age += dt * 0.004;
+      if (req.trail[j].age > 1) req.trail.splice(j, 1);
+    }
+
+    // Arrived at pod
+    if (req.t >= 1 && !req.arrived) {
+      req.arrived = true;
+      req.t = 1;
+      const pod = state.pods[req.podIdx];
+      pod.queue = Math.max(0, pod.queue - 1);
+      pod.totalReqs++;
+      if (req.cacheHit) pod.cacheHits++;
+      pod.ttftSum += req.ttft;
+      pod.ttftCount++;
+      pod.glow = 1;
+    }
+
+    // Fade out after arrival
+    if (req.arrived) {
+      req.fadeOut -= dt * 0.003 * speedMult;
+      if (req.fadeOut <= 0) {
+        req.done = true;
+        continue;
+      }
+    }
+
+    activeCount++;
+  }
+
+  // Garbage collect completed requests
+  if (state.requests.length > 300) {
+    state.requests = state.requests.filter(r => !r.done);
+  }
+
+  // Update aggregate stats
+  let totalHits = 0, totalReqs = 0, totalTTFT = 0, totalTTFTCount = 0;
+  state.pods.forEach(p => {
+    totalHits += p.cacheHits;
+    totalReqs += p.totalReqs;
+    totalTTFT += p.ttftSum;
+    totalTTFTCount += p.ttftCount;
+    p.glow *= 0.94;
+  });
+
+  state.agg.cacheRate = totalReqs > 0 ? totalHits / totalReqs : 0;
+  state.agg.avgTTFT = totalTTFTCount > 0 ? totalTTFT / totalTTFTCount : 0;
+  state.agg.tokensPerSec = Math.round(
+    totalReqs * (isLlmd ? 82 : 28) + Math.random() * 15
+  );
+  state.agg.activeReqs = activeCount;
+
+  // Auto-loop when all waves done and no active requests
+  if (state.wavesSent >= sc.waves && activeCount === 0) {
+    resetSideState(state);
+  }
+}
+
+function resetSideState(state) {
+  state.requests = [];
+  state.pods.forEach(p => {
+    p.queue = 0;
+    p.cacheHits = 0;
+    p.totalReqs = 0;
+    p.ttftSum = 0;
+    p.ttftCount = 0;
+    p.glow = 0;
+    p.peakQueue = 0;
+  });
+  state.agg = { tokensPerSec: 0, avgTTFT: 0, cacheRate: 0, activeReqs: 0 };
+  state.nextWave = simTime + 400;
+  state.wavesSent = 0;
+  state.stickyMap = {};
+}
+
+// ── Canvas Drawing ──────────────────────────────────────────────
+
+function drawSide(ctx, cv, state, isLlmd) {
+  const W = cv.width;
+  const H = cv.height;
+  const sc = SCENARIOS[currentScenario];
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = C.grid;
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 60) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 60) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  // Radar sweep effect
+  const sweepAngle = (simTime * 0.0004 * speedMult) % (Math.PI * 2);
+  const cx = W / 2;
+  const cy = H / 2;
+  const sweepR = Math.max(W, H) * 0.55;
+  const sweepColor = isLlmd ? C.green : C.red;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(sweepAngle);
+
+  // Sweep line
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(sweepR, 0);
+  ctx.strokeStyle = sweepColor;
+  ctx.globalAlpha = 0.12;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Sweep trailing arc
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, sweepR, -0.4, 0, false);
+  ctx.closePath();
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, sweepR);
+  grad.addColorStop(0, sweepColor);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.globalAlpha = 0.04;
+  ctx.fill();
+
+  ctx.restore();
+
+  // Concentric guide circles
+  ctx.strokeStyle = isLlmd ? 'rgba(0, 255, 136, 0.03)' : 'rgba(255, 68, 85, 0.03)';
+  ctx.lineWidth = 1;
+  for (let r = sweepR * 0.25; r <= sweepR; r += sweepR * 0.25) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // ── Draw agents (top) ────────────────────────────────
+  const agentCount = sc.agentCount;
+  for (let i = 0; i < agentCount; i++) {
+    const ax = W * 0.12 + (i / Math.max(1, agentCount - 1)) * (W * 0.76);
+    const ay = H * 0.08;
+
+    // Agent diamond icon
+    ctx.save();
+    ctx.shadowColor = C.cyan;
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(0, 212, 255, 0.15)';
+    ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay - 14);
+    ctx.lineTo(ax + 10, ay);
+    ctx.lineTo(ax, ay + 14);
+    ctx.lineTo(ax - 10, ay);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Agent label
+    ctx.fillStyle = C.cyan;
+    ctx.font = '18px "Red Hat Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(sc.agentLabels[i], ax, ay + 20);
+  }
+
+  // ── Draw pods (bottom) ───────────────────────────────
+  for (let i = 0; i < 4; i++) {
+    const px = W * 0.15 + (i / 3) * (W * 0.7);
+    const py = H * 0.82;
+    const pw = 76;
+    const ph = 44;
+    const pod = state.pods[i];
+
+    // Pod glow
+    ctx.save();
+    if (pod.glow > 0.02) {
+      ctx.shadowColor = isLlmd ? C.green : C.red;
+      ctx.shadowBlur = 20 * pod.glow;
+    }
+
+    // Pod body
+    const rx = px - pw / 2;
+    const ry = py - ph / 2;
+    drawRoundRect(ctx, rx, ry, pw, ph, 6);
+    ctx.fillStyle = C.podFill;
+    ctx.fill();
+
+    // Queue fill bar inside pod
+    const qFrac = Math.min(pod.queue / 12, 1);
+    if (qFrac > 0) {
+      ctx.save();
+      drawRoundRect(ctx, rx, ry, pw, ph, 6);
+      ctx.clip();
+      const barColor = qFrac > 0.6 ? C.red : (qFrac > 0.3 ? C.amber : C.green);
+      ctx.fillStyle = barColor;
+      ctx.globalAlpha = 0.25;
+      const fillH = qFrac * (ph - 4);
+      ctx.fillRect(rx + 2, ry + ph - fillH - 2, pw - 4, fillH);
+      ctx.restore();
+    }
+
+    // Pod border (color indicates load)
+    const borderColor = pod.queue > 6
+      ? (isLlmd ? 'rgba(255, 170, 0, 0.4)' : 'rgba(255, 68, 85, 0.5)')
+      : (isLlmd ? 'rgba(0, 255, 136, 0.3)' : 'rgba(0, 212, 255, 0.2)');
+    drawRoundRect(ctx, rx, ry, pw, ph, 6);
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Pod label
+    ctx.fillStyle = C.textMid;
+    ctx.font = '16px "Red Hat Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(POD_LABELS[i], px, py + ph / 2 + 8);
+  }
+
+  // ── Draw request paths and dots ──────────────────────
+  // First pass: draw path lines
+  state.requests.forEach(req => {
+    if (req.done || req.waiting) return;
+
+    ctx.strokeStyle = req.cacheHit
+      ? 'rgba(0, 255, 136, 0.07)'
+      : 'rgba(255, 68, 85, 0.07)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(req.ax, req.ay);
+    ctx.quadraticCurveTo(req.cpx, req.cpy, req.px, req.py);
+    ctx.stroke();
+  });
+
+  // Second pass: draw trail particles
+  state.requests.forEach(req => {
+    if (req.done || req.waiting) return;
+    req.trail.forEach(tp => {
+      const alpha = Math.max(0, (1 - tp.age) * 0.35);
+      ctx.beginPath();
+      ctx.arc(tp.x, tp.y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = req.color;
+      ctx.globalAlpha = alpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+  });
+
+  // Third pass: draw dots
+  state.requests.forEach(req => {
+    if (req.done || req.waiting) return;
+
+    const pos = bezier(
+      req.ax, req.ay,
+      req.cpx, req.cpy,
+      req.px, req.py,
+      Math.min(req.t, 1)
+    );
+
+    ctx.save();
+    ctx.globalAlpha = req.arrived ? Math.max(0, req.fadeOut) : 1;
+
+    // Glow
+    ctx.shadowColor = req.color;
+    ctx.shadowBlur = 16;
+
+    // Queued indicator (turn amber if pod queue is high)
+    const isQueued = !req.arrived && req.t > 0.8 && state.pods[req.podIdx].queue > 7;
+    const dotColor = isQueued ? C.amber : req.color;
+
+    // Outer dot
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, req.arrived ? 4 : 6.5, 0, Math.PI * 2);
+    ctx.fillStyle = dotColor;
+    ctx.fill();
+
+    // Inner bright core
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = (req.arrived ? Math.max(0, req.fadeOut) : 1) * 0.7;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, req.arrived ? 1.5 : 2.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+function drawRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+// ── Metrics DOM update ──────────────────────────────────────────
+
+function updateMetricsDOM(state, prefix) {
+  state.pods.forEach((pod, i) => {
+    const qEl = document.getElementById(prefix + '_q' + i);
+    const cEl = document.getElementById(prefix + '_c' + i);
+    const tEl = document.getElementById(prefix + '_t' + i);
+
+    if (qEl) {
+      qEl.textContent = pod.queue;
+      qEl.style.color = pod.queue > 6 ? C.red : (pod.queue > 3 ? C.amber : C.green);
+    }
+    if (cEl) {
+      const rate = pod.totalReqs > 0 ? Math.round(pod.cacheHits / pod.totalReqs * 100) : 0;
+      cEl.textContent = rate + '%';
+      cEl.style.color = rate > 60 ? C.green : (rate > 20 ? C.amber : C.red);
+    }
+    if (tEl) {
+      const ttft = pod.ttftCount > 0 ? Math.round(pod.ttftSum / pod.ttftCount) : 0;
+      tEl.textContent = ttft > 0 ? ttft + 'ms' : '--';
+      tEl.style.color = ttft > 0 ? (ttft < 120 ? C.green : (ttft < 300 ? C.amber : C.red)) : C.textDim;
+    }
+  });
+
+  // Aggregate
+  const aggPrefix = prefix === 'metricsNaive' ? 'aggNaive' : 'aggLlmd';
+  const setVal = (suffix, val) => {
+    const el = document.getElementById(aggPrefix + '_' + suffix);
+    if (el) el.textContent = val;
+  };
+
+  setVal('tps', state.agg.tokensPerSec.toLocaleString());
+  setVal('ttft', state.agg.avgTTFT > 0 ? Math.round(state.agg.avgTTFT) + 'ms' : '--');
+  setVal('cache', Math.round(state.agg.cacheRate * 100) + '%');
+  setVal('active', state.agg.activeReqs);
+}
+
+// ── Animation loop ──────────────────────────────────────────────
+
+function animate(ts) {
+  if (!lastTime) lastTime = ts;
+  const dt = Math.min(ts - lastTime, 50);
+  lastTime = ts;
+
+  if (playing) {
+    simTime += dt * speedMult;
+    const sc = SCENARIOS[currentScenario];
+    updateSide(naiveState, sc.naive, dt, false);
+    updateSide(llmdState, sc.llmd, dt, true);
+  }
+
+  drawSide(ctxN, cvN, naiveState, false);
+  drawSide(ctxL, cvL, llmdState, true);
+
+  updateMetricsDOM(naiveState, 'metricsNaive');
+  updateMetricsDOM(llmdState, 'metricsLlmd');
+
+  animId = requestAnimationFrame(animate);
+}
+
+// ── Controls ────────────────────────────────────────────────────
+
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = playing ? 'PAUSE' : 'PLAY';
+  btn.classList.toggle('active', playing);
+}
+
+function resetSim() {
+  simTime = 0;
+  lastTime = 0;
+  naiveState = createSideState();
+  llmdState = createSideState();
+  naiveState.nextWave = 400;
+  llmdState.nextWave = 400;
+}
+
+// Expose to onclick handlers
+window.togglePlay = togglePlay;
+window.resetSim = resetSim;
+
+// ── Scenario switching ──────────────────────────────────────────
+
+document.querySelectorAll('.scenario-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentScenario = btn.dataset.scenario;
+    document.getElementById('scenarioDesc').textContent = SCENARIOS[currentScenario].desc;
+    resetSim();
+    if (!playing) {
+      playing = true;
+      document.getElementById('btnPlay').textContent = 'PAUSE';
+      document.getElementById('btnPlay').classList.add('active');
+    }
+  });
+});
+
+// Speed slider
+document.getElementById('speedSlider').addEventListener('input', function() {
+  speedMult = parseFloat(this.value);
+});
+
+// ── Boot ────────────────────────────────────────────────────────
+
+function init() {
+  initMetrics();
+  resizeCanvases();
+  resetSim();
+  animId = requestAnimationFrame(animate);
+}
+
+window.addEventListener('resize', resizeCanvases);
+init();
+</script>
 </body>
 </html>
