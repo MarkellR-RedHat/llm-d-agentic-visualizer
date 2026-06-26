@@ -1674,6 +1674,112 @@ footer a:hover { text-decoration: underline; }
 }
 
 .empty-state .es-icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.3; }
+
+/* ── A) Drag-and-Drop Agent Composer ───────────────── */
+.composer-section { margin-top: 16px; }
+.composer-section h3 { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; color: var(--text-bright); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.composer-layout { display: grid; grid-template-columns: 180px 1fr 240px; gap: 12px; min-height: 420px; }
+.node-palette { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; overflow-y: auto; }
+.node-palette h4 { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.palette-node { background: rgba(10,14,23,0.8); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; cursor: grab; display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text); transition: all 0.2s; user-select: none; }
+.palette-node:hover { border-color: var(--border-bright); transform: translateX(2px); }
+.palette-node:active { cursor: grabbing; }
+.palette-icon { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; flex-shrink: 0; }
+.composer-canvas-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; }
+.composer-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.composer-toolbar .ct-title { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.composer-canvas { flex: 1; position: relative; min-height: 360px; background: repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(59,130,246,0.03) 24px, rgba(59,130,246,0.03) 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(59,130,246,0.03) 24px, rgba(59,130,246,0.03) 25px); overflow: hidden; }
+.composer-canvas.drag-over { background-color: rgba(59,130,246,0.03); }
+.canvas-node { position: absolute; width: 150px; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 8px; cursor: move; transition: box-shadow 0.2s; z-index: 5; }
+.canvas-node:hover { box-shadow: 0 0 12px rgba(59,130,246,0.15); }
+.canvas-node.cn-selected { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(59,130,246,0.25); }
+.canvas-node .cn-header { padding: 6px 8px; border-radius: 8px 8px 0 0; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 4px; }
+.canvas-node[data-type="llm"] .cn-header { background: var(--blue-dim); color: var(--blue); border-bottom: 1px solid rgba(59,130,246,0.2); }
+.canvas-node[data-type="tool"] .cn-header { background: rgba(168,85,247,0.08); color: var(--purple); border-bottom: 1px solid rgba(168,85,247,0.2); }
+.canvas-node[data-type="router"] .cn-header { background: var(--amber-dim); color: var(--amber); border-bottom: 1px solid rgba(245,158,11,0.2); }
+.canvas-node[data-type="parallel"] .cn-header { background: rgba(6,182,212,0.08); color: var(--cyan); border-bottom: 1px solid rgba(6,182,212,0.2); }
+.canvas-node[data-type="merge"] .cn-header { background: var(--green-dim); color: var(--green); border-bottom: 1px solid rgba(34,197,94,0.2); }
+.canvas-node .cn-body { padding: 8px; }
+.canvas-node .cn-name { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text); margin-bottom: 2px; }
+.canvas-node .cn-summary { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-dim); }
+.canvas-node .cn-result { font-family: var(--font-mono); font-size: 0.58rem; padding: 3px 6px; margin-top: 4px; border-radius: 3px; text-align: center; }
+.node-connector { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-card-solid); border: 2px solid var(--border-bright); top: 50%; transform: translateY(-50%); cursor: crosshair; z-index: 6; }
+.node-connector.nc-in { left: -5px; }
+.node-connector.nc-out { right: -5px; }
+.node-connector:hover { border-color: var(--blue); background: var(--blue-dim); box-shadow: 0 0 8px rgba(59,130,246,0.5); }
+.node-config-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow-y: auto; }
+.node-config-panel h4 { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--text-bright); margin-bottom: 10px; }
+.ncp-field { margin-bottom: 12px; }
+.ncp-field label { display: block; font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.ncp-field select, .ncp-field input[type="number"] { width: 100%; padding: 6px 8px; background: rgba(10,14,23,0.8); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-family: var(--font-mono); font-size: 0.75rem; }
+.ncp-field select:focus, .ncp-field input[type="number"]:focus { outline: none; border-color: var(--blue); }
+.ncp-field input[type="range"] { width: 100%; height: 4px; border-radius: 2px; background: rgba(59,130,246,0.12); outline: none; -webkit-appearance: none; appearance: none; }
+.ncp-field input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--blue); cursor: pointer; }
+
+/* ── B) Enhanced Jaeger Trace ──────────────────────── */
+.trace-filter-bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.trace-filter-bar label { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+.trace-filter-bar select, .trace-filter-bar input { background: rgba(10,14,23,0.8); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; color: var(--text); font-family: var(--font-mono); font-size: 0.72rem; }
+.trace-filter-bar select:focus, .trace-filter-bar input:focus { outline: none; border-color: var(--blue); }
+.span-inline-detail { background: rgba(10,14,23,0.8); border-left: 2px solid var(--blue); padding: 8px 12px; margin: 4px 0 4px 30px; border-radius: 0 6px 6px 0; animation: slideDown 0.2s ease-out; }
+@keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 300px; } }
+.span-collapse-btn { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 3px; background: rgba(59,130,246,0.06); border: 1px solid var(--border); color: var(--text-dim); font-size: 0.5rem; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+.span-collapse-btn:hover { border-color: var(--blue); color: var(--blue); }
+.span-id-tag { font-family: var(--font-mono); font-size: 0.55rem; color: var(--text-dim); background: rgba(0,0,0,0.3); padding: 1px 4px; border-radius: 2px; margin-left: 4px; }
+
+/* ── C) Cost Calculator ────────────────────────────── */
+.cost-calc-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.cost-calc-section h4 { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; color: var(--text-bright); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.cost-calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.cost-input-group { display: flex; flex-direction: column; gap: 4px; }
+.cost-input-group label { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.cost-input-group input, .cost-input-group select { background: rgba(10,14,23,0.8); border: 1px solid var(--border); border-radius: 5px; padding: 6px 8px; color: var(--text); font-family: var(--font-mono); font-size: 0.75rem; }
+.cost-input-group input:focus, .cost-input-group select:focus { outline: none; border-color: var(--blue); }
+.cost-results-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.cost-result-card { background: rgba(10,14,23,0.6); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+.cost-result-card .cr-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.cost-result-card .cr-value { font-family: var(--font-display); font-weight: 900; font-size: 1.2rem; }
+.cost-scale-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.7rem; margin-top: 10px; }
+.cost-scale-table th { text-align: left; color: var(--text-dim); font-weight: 500; padding: 4px 8px; border-bottom: 1px solid var(--border); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.cost-scale-table td { padding: 6px 8px; border-bottom: 1px solid rgba(59,130,246,0.06); color: var(--text); }
+
+/* ── D) Agent Execution Replay ─────────────────────── */
+.replay-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.replay-section h4 { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; color: var(--text-bright); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.replay-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.replay-controls .trace-btn { padding: 5px 14px; }
+.replay-speed-btns { display: flex; gap: 4px; margin-left: 8px; }
+.replay-speed-btn { font-family: var(--font-mono); font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
+.replay-speed-btn:hover, .replay-speed-btn.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+.replay-timer { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--text-bright); margin-left: auto; padding: 4px 10px; background: rgba(10,14,23,0.8); border: 1px solid var(--border); border-radius: 5px; min-width: 80px; text-align: center; }
+.replay-pipeline { display: flex; align-items: center; gap: 0; padding: 16px 12px; background: rgba(10,14,23,0.6); border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; margin-bottom: 8px; }
+.replay-node { position: relative; min-width: 90px; padding: 10px 8px; border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: rgba(10,14,23,0.8); transition: all 0.3s; flex-shrink: 0; }
+.replay-node .rn-icon { font-size: 1.1rem; }
+.replay-node .rn-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); text-align: center; white-space: nowrap; }
+.replay-node .rn-timing { font-family: var(--font-mono); font-size: 0.55rem; color: var(--text-dim); margin-top: 2px; }
+.replay-node.rn-active { border-color: var(--blue); animation: replayPulse 1.2s ease-in-out infinite; }
+.replay-node.rn-hit { border-color: var(--green); box-shadow: 0 0 14px rgba(34,197,94,0.4); background: rgba(34,197,94,0.06); }
+.replay-node.rn-miss { border-color: var(--red); box-shadow: 0 0 14px rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); }
+.replay-node.rn-done { border-color: var(--text-dim); opacity: 0.6; }
+@keyframes replayPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); } 50% { box-shadow: 0 0 0 8px rgba(59,130,246,0); } }
+.replay-arrow { display: flex; align-items: center; position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.replay-arrow-line { position: absolute; top: 50%; left: 0; right: 8px; height: 2px; background: var(--border-bright); transform: translateY(-50%); }
+.replay-arrow-head { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid var(--border-bright); }
+.replay-particle { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); top: 50%; transform: translateY(-50%); box-shadow: 0 0 6px rgba(59,130,246,0.8); opacity: 0; }
+.replay-particle.rp-active { animation: particleFlow 0.6s linear forwards; }
+@keyframes particleFlow { 0% { left: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { left: calc(100% - 10px); opacity: 0; } }
+.replay-cache-overlay { position: absolute; inset: 0; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 0.55rem; font-weight: 700; text-transform: uppercase; pointer-events: none; opacity: 0; z-index: 2; }
+.replay-cache-overlay.rco-checking { background: rgba(59,130,246,0.15); color: var(--blue); animation: cacheCheckFade 0.6s ease-in-out forwards; }
+.replay-cache-overlay.rco-hit { background: rgba(34,197,94,0.2); color: var(--green); animation: cacheCheckFade 0.8s ease-in-out forwards; }
+.replay-cache-overlay.rco-miss { background: rgba(239,68,68,0.2); color: var(--red); animation: cacheCheckFade 0.8s ease-in-out forwards; }
+@keyframes cacheCheckFade { 0% { opacity: 0; } 30% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+.replay-status { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); padding: 6px 10px; background: rgba(10,14,23,0.6); border-left: 2px solid var(--blue); border-radius: 0 4px 4px 0; }
+
+@media (max-width: 1100px) {
+  .composer-layout { grid-template-columns: 1fr; }
+  .node-palette { display: flex; gap: 6px; flex-wrap: wrap; }
+  .palette-node { margin-bottom: 0; }
+}
 </style>
 </head>
 <body>
@@ -1702,7 +1808,7 @@ footer a:hover { text-decoration: underline; }
   </div>
   <div class="hero-message">
     <div class="hm-title">Your agent makes 7 LLM calls per user query.</div>
-    <div class="hm-sub">Without smart routing, you're paying for <span class="hm-highlight">7 cold prefills</span>. With llm-d, calls 2-7 hit warm KV cache -- up to 80% faster TTFT.</div>
+    <div class="hm-sub">Without smart routing, you're paying for <span class="hm-highlight">7 cold prefills</span>. With llm-d, calls 2-7 hit warm KV cache, delivering up to 80% faster TTFT.</div>
   </div>
   <div class="hero-stat">
     <div class="hs-number" style="-webkit-text-fill-color: var(--green);">80%</div>
@@ -1733,6 +1839,28 @@ footer a:hover { text-decoration: underline; }
 <div class="main-content">
   <!-- AGENT TRACE MODE -->
   <div class="mode-panel active" id="panel-trace">
+    <!-- Jaeger-style Filter Bar -->
+    <div class="trace-filter-bar" id="traceFilterBar">
+      <label>Service:</label>
+      <select id="filterService">
+        <option value="all">All Services</option>
+        <option value="inference-svc">inference-svc</option>
+        <option value="tool-executor">tool-executor</option>
+        <option value="mcp-bridge">mcp-bridge</option>
+      </select>
+      <label>Cache:</label>
+      <select id="filterCache">
+        <option value="all">All</option>
+        <option value="hit">Hit</option>
+        <option value="partial">Partial</option>
+        <option value="miss">Miss</option>
+      </select>
+      <label>Min Duration:</label>
+      <input type="number" id="filterMinDuration" placeholder="0" min="0" style="width:70px;">
+      <label style="margin-left:auto;">ms</label>
+      <button class="trace-btn" onclick="applyTraceFilters()" style="margin-left:4px;">FILTER</button>
+      <button class="trace-btn" onclick="clearTraceFilters()">CLEAR</button>
+    </div>
     <div class="trace-layout">
       <div class="trace-main">
         <div class="trace-header">
@@ -1785,6 +1913,23 @@ footer a:hover { text-decoration: underline; }
       </div>
       <div style="font-size:0.7rem;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);">MCP tool calls trigger LLM inference through llm-d. Subsequent tool calls share the same system prompt prefix, so EPP routes them to pods with warm KV cache.</div>
     </div>
+
+    <!-- D) Agent Execution Replay -->
+    <div class="replay-section">
+      <h4><span class="tag tag-blue">REPLAY</span> Agent Execution Replay</h4>
+      <div class="replay-controls">
+        <button class="trace-btn active" id="replayPlayBtn" onclick="toggleReplay()">PLAY</button>
+        <button class="trace-btn" onclick="restartReplay()">RESTART</button>
+        <div class="replay-speed-btns">
+          <button class="replay-speed-btn" data-speed="0.5" onclick="setReplaySpeed(0.5, this)">0.5x</button>
+          <button class="replay-speed-btn active" data-speed="1" onclick="setReplaySpeed(1, this)">1x</button>
+          <button class="replay-speed-btn" data-speed="2" onclick="setReplaySpeed(2, this)">2x</button>
+        </div>
+        <div class="replay-timer" id="replayTimer">0.000s</div>
+      </div>
+      <div class="replay-pipeline" id="replayPipeline"></div>
+      <div class="replay-status" id="replayStatus">Press PLAY to watch a multi-step agent execution in slow motion</div>
+    </div>
   </div>
 
   <!-- MULTI-AGENT MODE -->
@@ -1792,7 +1937,7 @@ footer a:hover { text-decoration: underline; }
     <div class="multi-layout">
       <div class="multi-top">
         <div class="multi-cluster">
-          <div class="cluster-title">llm-d Cluster -- 8 vLLM Pods</div>
+          <div class="cluster-title">llm-d Cluster: 8 vLLM Pods</div>
           <div class="pod-grid" id="multiPodGrid"></div>
           <div class="agent-lanes" id="agentLanes"></div>
         </div>
@@ -1851,6 +1996,97 @@ footer a:hover { text-decoration: underline; }
         </div>
       </div>
     </div>
+
+    <!-- A) Drag-and-Drop Workflow Composer -->
+    <div class="composer-section">
+      <h3><span class="tag tag-cyan">NEW</span> Visual Workflow Composer</h3>
+      <div class="composer-layout">
+        <div class="node-palette">
+          <h4>Node Types</h4>
+          <div class="palette-node" draggable="true" data-node-type="llm">
+            <div class="palette-icon" style="background:var(--blue-dim);color:var(--blue);">L</div>
+            <span>LLM Call</span>
+          </div>
+          <div class="palette-node" draggable="true" data-node-type="tool">
+            <div class="palette-icon" style="background:rgba(168,85,247,0.12);color:var(--purple);">T</div>
+            <span>Tool Use</span>
+          </div>
+          <div class="palette-node" draggable="true" data-node-type="router">
+            <div class="palette-icon" style="background:var(--amber-dim);color:var(--amber);">R</div>
+            <span>Router</span>
+          </div>
+          <div class="palette-node" draggable="true" data-node-type="parallel">
+            <div class="palette-icon" style="background:rgba(6,182,212,0.12);color:var(--cyan);">P</div>
+            <span>Parallel Split</span>
+          </div>
+          <div class="palette-node" draggable="true" data-node-type="merge">
+            <div class="palette-icon" style="background:var(--green-dim);color:var(--green);">M</div>
+            <span>Merge</span>
+          </div>
+          <div style="margin-top:12px;font-family:var(--font-mono);font-size:0.58rem;color:var(--text-dim);line-height:1.5;">
+            Drag nodes onto the canvas to build a workflow chain. Click a node to configure it. Connect nodes by clicking output then input connectors.
+          </div>
+        </div>
+        <div class="composer-canvas-wrap">
+          <div class="composer-toolbar">
+            <span class="ct-title">Workflow Canvas</span>
+            <div style="display:flex;gap:6px;">
+              <button class="trace-btn" onclick="runComposerWorkflow()">RUN WORKFLOW</button>
+              <button class="trace-btn" onclick="clearComposerCanvas()">CLEAR</button>
+            </div>
+          </div>
+          <div class="composer-canvas" id="composerCanvas">
+            <svg id="composerSVG" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;"></svg>
+          </div>
+        </div>
+        <div class="node-config-panel" id="nodeConfigPanel">
+          <h4>Node Configuration</h4>
+          <div class="empty-state" id="nodeConfigEmpty" style="padding:20px 10px;"><div class="es-icon">+</div>Select a node on the canvas to configure its parameters</div>
+          <div id="nodeConfigFields" style="display:none;">
+            <div class="ncp-field">
+              <label>Node Name</label>
+              <input type="text" id="ncpName" style="width:100%;padding:6px 8px;background:rgba(10,14,23,0.8);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:0.75rem;">
+            </div>
+            <div class="ncp-field" id="ncpModelGroup">
+              <label>Model</label>
+              <select id="ncpModel">
+                <option value="llama-3.1-8b">Llama 3.1 8B</option>
+                <option value="llama-3.1-70b" selected>Llama 3.1 70B</option>
+                <option value="llama-3.1-405b">Llama 3.1 405B</option>
+                <option value="mistral-7b">Mistral 7B</option>
+                <option value="granite-3.0">Granite 3.0</option>
+              </select>
+            </div>
+            <div class="ncp-field" id="ncpTempGroup">
+              <label>Temperature <span id="ncpTempVal" style="color:var(--blue);float:right;">0.7</span></label>
+              <input type="range" id="ncpTemp" min="0" max="2" step="0.1" value="0.7">
+            </div>
+            <div class="ncp-field" id="ncpMaxTokGroup">
+              <label>Max Tokens <span id="ncpMaxTokVal" style="color:var(--blue);float:right;">512</span></label>
+              <input type="range" id="ncpMaxTok" min="64" max="4096" step="64" value="512">
+            </div>
+            <div class="ncp-field" id="ncpToolGroup" style="display:none;">
+              <label>Tool Name</label>
+              <select id="ncpToolName">
+                <option value="web_search">web_search</option>
+                <option value="code_exec">code_exec</option>
+                <option value="database_query">database_query</option>
+                <option value="file_read">file_read</option>
+              </select>
+            </div>
+            <div class="ncp-field" id="ncpConditionGroup" style="display:none;">
+              <label>Condition</label>
+              <select id="ncpCondition">
+                <option value="tool_needed">Tool needed?</option>
+                <option value="confidence_check">Confidence > threshold?</option>
+                <option value="retry_check">Retry needed?</option>
+              </select>
+            </div>
+            <button class="builder-run-btn" onclick="applyNodeConfig()" style="margin-top:8px;">Apply Configuration</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- COMPARISON MODE -->
@@ -1898,6 +2134,44 @@ footer a:hover { text-decoration: underline; }
         </div>
       </div>
       <div class="profile-results" id="profileResults"></div>
+    </div>
+
+    <!-- C) Cost Per Agent Call Calculator -->
+    <div class="cost-calc-section">
+      <h4><span class="tag tag-green">CALCULATOR</span> Cost Per Agent Call</h4>
+      <div class="cost-calc-grid">
+        <div class="cost-input-group">
+          <label>LLM Calls / Invocation</label>
+          <input type="number" id="costCalls" value="8" min="1" max="50">
+        </div>
+        <div class="cost-input-group">
+          <label>Avg Prompt Tokens</label>
+          <input type="number" id="costPromptTok" value="2300" min="100" max="32000" step="100">
+        </div>
+        <div class="cost-input-group">
+          <label>Avg Completion Tokens</label>
+          <input type="number" id="costCompTok" value="500" min="50" max="8000" step="50">
+        </div>
+        <div class="cost-input-group">
+          <label>Cache Hit Rate %</label>
+          <input type="number" id="costCacheRate" value="85" min="0" max="100">
+        </div>
+        <div class="cost-input-group">
+          <label>Model Tier</label>
+          <select id="costModelTier">
+            <option value="0.20">7B ($0.20/M tokens)</option>
+            <option value="0.90" selected>70B ($0.90/M tokens)</option>
+            <option value="4.00">405B ($4.00/M tokens)</option>
+          </select>
+        </div>
+      </div>
+      <div class="cost-results-row" id="costResultsRow"></div>
+      <div style="margin-top:10px;">
+        <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Monthly Cost at Scale</div>
+        <table class="cost-scale-table" id="costScaleTable">
+          <tr><th>Scale</th><th>Without llm-d</th><th>With llm-d</th><th>Monthly Savings</th></tr>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -2109,6 +2383,7 @@ function generateTraceData() {
 
     return {
       id: idx,
+      spanId: hexHash(12),
       name: step.name,
       label: step.label,
       type: step.type,
@@ -2169,16 +2444,22 @@ function renderRuler() {
   el.innerHTML = marks.map(f => '<span>' + Math.round(f * total) + 'ms</span>').join('');
 }
 
+let expandedSpanIds = new Set();
+
 function renderTraceSpans() {
   const container = document.getElementById('traceSpans');
   if (!traceData) { container.innerHTML = ''; return; }
   const total = traceData.totalDuration;
 
   container.innerHTML = traceData.spans.map((span, idx) => {
+    // Apply filters
+    if (!spanPassesFilter(span)) return '';
+
     const leftPct = (span.startMs / total * 100);
     const widthPct = Math.max(0.5, span.durationMs / total * 100);
     const hidden = idx >= traceRevealIndex;
     const isCritical = showCriticalPath && traceData.criticalPath.has(idx);
+    const isExpanded = expandedSpanIds.has(idx);
 
     let barClass = 'span-bar';
     if (span.type === 'tool') barClass += ' tool-exec';
@@ -2198,32 +2479,68 @@ function renderTraceSpans() {
 
     const indents = Array.from({length: span.depth}, () => '<span class="span-indent"></span>').join('');
 
-    const spanClasses = 'trace-span' +
+    // Has children check (next span with greater depth)
+    const hasChildren = idx < traceData.spans.length - 1 && traceData.spans[idx + 1].depth > span.depth;
+    const collapseBtn = hasChildren ? '<span class="span-collapse-btn" data-toggle="' + idx + '">' + (isExpanded ? '-' : '+') + '</span>' : '';
+
+    const spanClasses = 'trace-span span-expandable' +
       (selectedSpanId === idx ? ' selected' : '') +
       (isCritical && !hidden ? ' critical-path' : '');
 
-    return '<div class="' + spanClasses + '" data-span="' + idx + '" style="opacity:' + (hidden ? '0' : '1') + ';transition:opacity 0.3s;">' +
-      '<div class="span-label">' + indents +
+    // Precision timing
+    const precisionMs = (span.durationMs + Math.random() * 0.9).toFixed(1);
+
+    let html = '<div class="' + spanClasses + '" data-span="' + idx + '" style="opacity:' + (hidden ? '0' : '1') + ';transition:opacity 0.3s;">' +
+      '<div class="span-label">' + indents + collapseBtn +
         '<span class="span-service">' + span.service + '</span>' +
         '<span class="span-icon" style="background:' + iconBg + ';">' + iconLetter + '</span>' +
         '<span class="span-name">' + span.label + '</span>' +
+        '<span class="span-id-tag">' + (span.spanId || hexHash(12)) + '</span>' +
       '</div>' +
       '<div class="span-bar-area">' +
         '<div class="' + barClass + '" style="left:' + leftPct + '%;width:' + widthPct + '%;' + (hidden ? 'opacity:0;' : '') + '">' +
           (span.targetPod !== null ? POD_NAMES[span.targetPod] : span.label) +
-          '<span class="span-bar-duration">' + span.durationMs + 'ms</span>' +
+          '<span class="span-bar-duration">' + precisionMs + 'ms</span>' +
         '</div>' +
-        '<span class="span-bar-timing" style="left:' + (leftPct + widthPct) + '%;' + (hidden ? 'opacity:0;' : '') + '">' + span.durationMs + 'ms</span>' +
+        '<span class="span-bar-timing" style="left:' + (leftPct + widthPct) + '%;' + (hidden ? 'opacity:0;' : '') + '">' + precisionMs + 'ms</span>' +
       '</div>' +
     '</div>';
+
+    // Inline detail (expanded)
+    if (isExpanded && !hidden) {
+      html += '<div class="span-inline-detail">' +
+        '<table class="kv-table" style="font-size:0.62rem;">' +
+        '<tr><td>span.id</td><td>' + (span.spanId || hexHash(12)) + '</td></tr>' +
+        '<tr><td>service</td><td>' + span.service + '</td></tr>' +
+        '<tr><td>duration</td><td>' + precisionMs + 'ms</td></tr>' +
+        '<tr><td>start</td><td>' + span.startMs + 'ms</td></tr>' +
+        (span.cacheType ? '<tr><td>cache</td><td style="color:' + (span.cacheType === 'hit' ? 'var(--green)' : span.cacheType === 'partial' ? 'var(--amber)' : 'var(--red)') + ';">' + span.cacheType + '</td></tr>' : '') +
+        (span.targetPod !== null ? '<tr><td>pod</td><td style="color:var(--blue);">' + POD_NAMES[span.targetPod] + '</td></tr>' : '') +
+        (span.ttft ? '<tr><td>ttft</td><td>' + span.ttft + 'ms</td></tr>' : '') +
+        (span.prefixHash ? '<tr><td>prefix</td><td>0x' + span.prefixHash + '</td></tr>' : '') +
+        '</table></div>';
+    }
+
+    return html;
   }).join('');
 
   // Attach click handlers
   container.querySelectorAll('.trace-span').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
+      // Check if collapse button was clicked
+      if (e.target.classList.contains('span-collapse-btn')) {
+        const toggleId = parseInt(e.target.dataset.toggle);
+        if (expandedSpanIds.has(toggleId)) expandedSpanIds.delete(toggleId);
+        else expandedSpanIds.add(toggleId);
+        renderTraceSpans();
+        return;
+      }
       const id = parseInt(el.dataset.span);
       if (id < traceRevealIndex) {
         selectedSpanId = id;
+        // Toggle inline detail
+        if (expandedSpanIds.has(id)) expandedSpanIds.delete(id);
+        else expandedSpanIds.add(id);
         renderTraceSpans();
         renderDetailForSpan(traceData.spans[id]);
       }
@@ -3098,11 +3415,627 @@ window.switchToProfile = switchToProfile;
 
 
 // ================================================================
+// FEATURE B: TRACE FILTERS
+// ================================================================
+
+let traceFilters = { service: 'all', cache: 'all', minDuration: 0 };
+
+function applyTraceFilters() {
+  traceFilters.service = document.getElementById('filterService').value;
+  traceFilters.cache = document.getElementById('filterCache').value;
+  traceFilters.minDuration = parseInt(document.getElementById('filterMinDuration').value) || 0;
+  renderTraceSpans();
+}
+
+function clearTraceFilters() {
+  traceFilters = { service: 'all', cache: 'all', minDuration: 0 };
+  document.getElementById('filterService').value = 'all';
+  document.getElementById('filterCache').value = 'all';
+  document.getElementById('filterMinDuration').value = '';
+  renderTraceSpans();
+}
+
+function spanPassesFilter(span) {
+  if (traceFilters.service !== 'all' && span.service !== traceFilters.service) return false;
+  if (traceFilters.cache !== 'all') {
+    if (span.type === 'tool' && traceFilters.cache !== 'all') return false;
+    if (span.cacheType !== traceFilters.cache) return false;
+  }
+  if (traceFilters.minDuration > 0 && span.durationMs < traceFilters.minDuration) return false;
+  return true;
+}
+
+window.applyTraceFilters = applyTraceFilters;
+window.clearTraceFilters = clearTraceFilters;
+
+
+// ================================================================
+// FEATURE D: AGENT EXECUTION REPLAY
+// ================================================================
+
+const REPLAY_STEPS = [
+  { label: 'User Query', type: 'input', icon: '?', duration: 0 },
+  { label: 'Parse Intent', type: 'llm', icon: 'L', duration: 445, cache: 'miss' },
+  { label: 'web_search()', type: 'tool', icon: 'T', duration: 380 },
+  { label: 'Analyze Results', type: 'llm', icon: 'L', duration: 120, cache: 'hit' },
+  { label: 'code_exec()', type: 'tool', icon: 'T', duration: 290 },
+  { label: 'Synthesize', type: 'llm', icon: 'L', duration: 95, cache: 'hit' },
+  { label: 'file_read()', type: 'tool', icon: 'T', duration: 210 },
+  { label: 'Final Response', type: 'llm', icon: 'L', duration: 78, cache: 'hit' },
+  { label: 'Response', type: 'output', icon: '>', duration: 0 }
+];
+
+let replayState = { playing: false, stepIndex: -1, timer: null, elapsed: 0, speed: 1 };
+
+function buildReplayPipeline() {
+  const container = document.getElementById('replayPipeline');
+  let html = '';
+  REPLAY_STEPS.forEach((step, i) => {
+    html += '<div class="replay-node" id="replayNode' + i + '">' +
+      '<div class="rn-icon">' + step.icon + '</div>' +
+      '<div class="rn-label">' + step.label + '</div>' +
+      '<div class="rn-timing" id="replayTiming' + i + '"></div>' +
+    '</div>';
+    if (i < REPLAY_STEPS.length - 1) {
+      html += '<div class="replay-arrow" id="replayArrow' + i + '">' +
+        '<div class="replay-arrow-line"></div>' +
+        '<div class="replay-arrow-head"></div>' +
+        '<div class="replay-particle" id="replayParticle' + i + '"></div>' +
+      '</div>';
+    }
+  });
+  container.innerHTML = html;
+}
+
+function toggleReplay() {
+  if (replayState.playing) {
+    replayState.playing = false;
+    if (replayState.timer) { clearTimeout(replayState.timer); replayState.timer = null; }
+    document.getElementById('replayPlayBtn').textContent = 'PLAY';
+    document.getElementById('replayPlayBtn').classList.remove('active');
+  } else {
+    replayState.playing = true;
+    document.getElementById('replayPlayBtn').textContent = 'PAUSE';
+    document.getElementById('replayPlayBtn').classList.add('active');
+    if (replayState.stepIndex < 0 || replayState.stepIndex >= REPLAY_STEPS.length) {
+      restartReplay();
+    }
+    advanceReplay();
+  }
+}
+
+function restartReplay() {
+  if (replayState.timer) { clearTimeout(replayState.timer); replayState.timer = null; }
+  replayState.stepIndex = -1;
+  replayState.elapsed = 0;
+  document.getElementById('replayTimer').textContent = '0.000s';
+  document.getElementById('replayStatus').textContent = 'Press PLAY to watch a multi-step agent execution in slow motion';
+  buildReplayPipeline();
+  if (replayState.playing) {
+    advanceReplay();
+  }
+}
+
+function advanceReplay() {
+  if (!replayState.playing) return;
+  replayState.stepIndex++;
+  if (replayState.stepIndex >= REPLAY_STEPS.length) {
+    replayState.playing = false;
+    document.getElementById('replayPlayBtn').textContent = 'PLAY';
+    document.getElementById('replayPlayBtn').classList.remove('active');
+    document.getElementById('replayStatus').textContent = 'Replay complete. Total elapsed: ' + (replayState.elapsed / 1000).toFixed(3) + 's';
+    return;
+  }
+
+  const step = REPLAY_STEPS[replayState.stepIndex];
+  const idx = replayState.stepIndex;
+  const node = document.getElementById('replayNode' + idx);
+
+  // Clear previous active
+  document.querySelectorAll('.replay-node').forEach(n => n.classList.remove('rn-active'));
+  node.classList.add('rn-active');
+
+  // Fire particle on previous arrow
+  if (idx > 0) {
+    const particle = document.getElementById('replayParticle' + (idx - 1));
+    if (particle) {
+      particle.classList.remove('rp-active');
+      void particle.offsetWidth;
+      particle.classList.add('rp-active');
+    }
+  }
+
+  // Status update
+  let statusText = 'Step ' + (idx + 1) + '/' + REPLAY_STEPS.length + ': ' + step.label;
+
+  if (step.type === 'llm') {
+    // Show cache check overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'replay-cache-overlay rco-checking';
+    overlay.textContent = 'Checking cache...';
+    node.appendChild(overlay);
+
+    const checkDelay = Math.round(300 / replayState.speed);
+    setTimeout(() => {
+      overlay.remove();
+      const resultOverlay = document.createElement('div');
+      if (step.cache === 'hit') {
+        resultOverlay.className = 'replay-cache-overlay rco-hit';
+        resultOverlay.textContent = 'CACHE HIT';
+        node.classList.remove('rn-active');
+        node.classList.add('rn-hit');
+        statusText += ' | Cache HIT on ' + POD_NAMES[2] + ' | TTFT: ' + step.duration + 'ms';
+      } else {
+        resultOverlay.className = 'replay-cache-overlay rco-miss';
+        resultOverlay.textContent = 'CACHE MISS';
+        node.classList.remove('rn-active');
+        node.classList.add('rn-miss');
+        statusText += ' | Cache MISS, cold prefill | TTFT: ' + step.duration + 'ms';
+      }
+      node.appendChild(resultOverlay);
+      document.getElementById('replayStatus').textContent = statusText;
+
+      replayState.elapsed += step.duration;
+      document.getElementById('replayTimer').textContent = (replayState.elapsed / 1000).toFixed(3) + 's';
+      document.getElementById('replayTiming' + idx).textContent = step.duration + 'ms';
+
+      const nextDelay = Math.round(step.duration / replayState.speed);
+      replayState.timer = setTimeout(advanceReplay, Math.min(nextDelay, 1500 / replayState.speed));
+    }, checkDelay);
+    return;
+  } else if (step.type === 'tool') {
+    statusText += ' | Executing external tool...';
+    document.getElementById('replayStatus').textContent = statusText;
+    replayState.elapsed += step.duration;
+    document.getElementById('replayTimer').textContent = (replayState.elapsed / 1000).toFixed(3) + 's';
+    document.getElementById('replayTiming' + idx).textContent = step.duration + 'ms';
+    node.classList.remove('rn-active');
+    node.classList.add('rn-done');
+    node.style.borderColor = 'var(--purple)';
+    node.style.opacity = '1';
+
+    const nextDelay = Math.round(step.duration / replayState.speed);
+    replayState.timer = setTimeout(advanceReplay, Math.min(nextDelay, 1200 / replayState.speed));
+    return;
+  } else {
+    document.getElementById('replayStatus').textContent = statusText;
+    node.classList.remove('rn-active');
+    node.classList.add('rn-done');
+    replayState.timer = setTimeout(advanceReplay, Math.round(400 / replayState.speed));
+    return;
+  }
+}
+
+function setReplaySpeed(speed, btn) {
+  replayState.speed = speed;
+  document.querySelectorAll('.replay-speed-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+window.toggleReplay = toggleReplay;
+window.restartReplay = restartReplay;
+window.setReplaySpeed = setReplaySpeed;
+buildReplayPipeline();
+
+
+// ================================================================
+// FEATURE A: DRAG-AND-DROP COMPOSER
+// ================================================================
+
+let composerNodes = [];
+let composerConnections = [];
+let composerNextId = 0;
+let composerSelectedNode = null;
+let composerDragging = null;
+let composerConnecting = null;
+
+const NODE_DEFAULTS = {
+  llm: { name: 'LLM Call', model: 'llama-3.1-70b', temperature: 0.7, maxTokens: 512 },
+  tool: { name: 'Tool Use', toolName: 'web_search' },
+  router: { name: 'Router', condition: 'tool_needed' },
+  parallel: { name: 'Parallel Split' },
+  merge: { name: 'Merge' }
+};
+
+function initComposer() {
+  const canvas = document.getElementById('composerCanvas');
+
+  // Drag from palette
+  document.querySelectorAll('.palette-node').forEach(pn => {
+    pn.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('nodeType', pn.dataset.nodeType);
+    });
+  });
+
+  canvas.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    canvas.classList.add('drag-over');
+  });
+
+  canvas.addEventListener('dragleave', () => {
+    canvas.classList.remove('drag-over');
+  });
+
+  canvas.addEventListener('drop', (e) => {
+    e.preventDefault();
+    canvas.classList.remove('drag-over');
+    const nodeType = e.dataTransfer.getData('nodeType');
+    if (!nodeType) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(10, Math.min(e.clientX - rect.left - 75, rect.width - 160));
+    const y = Math.max(10, Math.min(e.clientY - rect.top - 30, rect.height - 100));
+    addComposerNode(nodeType, x, y);
+  });
+
+  // Click canvas to deselect
+  canvas.addEventListener('click', (e) => {
+    if (e.target === canvas || e.target.tagName === 'svg') {
+      selectComposerNode(null);
+    }
+  });
+}
+
+function addComposerNode(type, x, y) {
+  const id = composerNextId++;
+  const defaults = NODE_DEFAULTS[type];
+  const node = {
+    id, type, x, y,
+    name: defaults.name + ' ' + id,
+    model: defaults.model || null,
+    temperature: defaults.temperature || null,
+    maxTokens: defaults.maxTokens || null,
+    toolName: defaults.toolName || null,
+    condition: defaults.condition || null,
+    result: null
+  };
+  composerNodes.push(node);
+  renderComposerNode(node);
+  selectComposerNode(id);
+}
+
+function renderComposerNode(node) {
+  const canvas = document.getElementById('composerCanvas');
+  const existing = document.getElementById('cnode-' + node.id);
+  if (existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.className = 'canvas-node' + (composerSelectedNode === node.id ? ' cn-selected' : '');
+  el.id = 'cnode-' + node.id;
+  el.dataset.type = node.type;
+  el.style.left = node.x + 'px';
+  el.style.top = node.y + 'px';
+
+  const typeLabels = { llm: 'LLM', tool: 'Tool', router: 'Router', parallel: 'Parallel', merge: 'Merge' };
+  let summary = '';
+  if (node.type === 'llm') summary = node.model + ' | T=' + (node.temperature || 0.7);
+  else if (node.type === 'tool') summary = node.toolName || 'web_search';
+  else if (node.type === 'router') summary = node.condition || 'condition';
+
+  let resultHTML = '';
+  if (node.result) {
+    const rc = node.result === 'hit' ? 'background:var(--green-dim);color:var(--green);' : (node.result === 'miss' ? 'background:var(--red-dim);color:var(--red);' : 'background:rgba(168,85,247,0.1);color:var(--purple);');
+    resultHTML = '<div class="cn-result" style="' + rc + '">' + node.result.toUpperCase() + '</div>';
+  }
+
+  el.innerHTML = '<div class="cn-header">' + typeLabels[node.type] + '</div>' +
+    '<div class="cn-body">' +
+      '<div class="cn-name">' + node.name + '</div>' +
+      '<div class="cn-summary">' + summary + '</div>' +
+      resultHTML +
+    '</div>' +
+    '<div class="node-connector nc-in" data-node="' + node.id + '" data-side="in"></div>' +
+    '<div class="node-connector nc-out" data-node="' + node.id + '" data-side="out"></div>';
+
+  // Drag to move
+  let startX, startY, origX, origY;
+  el.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('node-connector')) return;
+    e.preventDefault();
+    startX = e.clientX; startY = e.clientY;
+    origX = node.x; origY = node.y;
+    const onMove = (ev) => {
+      node.x = Math.max(0, origX + (ev.clientX - startX));
+      node.y = Math.max(0, origY + (ev.clientY - startY));
+      el.style.left = node.x + 'px';
+      el.style.top = node.y + 'px';
+      renderComposerConnections();
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  el.addEventListener('click', (e) => {
+    if (!e.target.classList.contains('node-connector')) {
+      e.stopPropagation();
+      selectComposerNode(node.id);
+    }
+  });
+
+  // Connectors
+  el.querySelectorAll('.node-connector').forEach(conn => {
+    conn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const nodeId = parseInt(conn.dataset.node);
+      const side = conn.dataset.side;
+      if (side === 'out') {
+        composerConnecting = nodeId;
+        conn.style.background = 'var(--blue)';
+      } else if (side === 'in' && composerConnecting !== null && composerConnecting !== nodeId) {
+        if (!composerConnections.find(c => c.from === composerConnecting && c.to === nodeId)) {
+          composerConnections.push({ from: composerConnecting, to: nodeId });
+        }
+        composerConnecting = null;
+        document.querySelectorAll('.node-connector').forEach(c => c.style.background = '');
+        renderComposerConnections();
+      }
+    });
+  });
+
+  canvas.appendChild(el);
+}
+
+function renderComposerConnections() {
+  const svg = document.getElementById('composerSVG');
+  svg.innerHTML = '';
+  composerConnections.forEach(conn => {
+    const fromEl = document.getElementById('cnode-' + conn.from);
+    const toEl = document.getElementById('cnode-' + conn.to);
+    if (!fromEl || !toEl) return;
+    const fromNode = composerNodes.find(n => n.id === conn.from);
+    const toNode = composerNodes.find(n => n.id === conn.to);
+    if (!fromNode || !toNode) return;
+
+    const x1 = fromNode.x + 155;
+    const y1 = fromNode.y + fromEl.offsetHeight / 2;
+    const x2 = toNode.x - 5;
+    const y2 = toNode.y + toEl.offsetHeight / 2;
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', 'rgba(59,130,246,0.4)');
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-dasharray', '4,3');
+    svg.appendChild(line);
+
+    // Arrowhead
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const arrowSize = 6;
+    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    const px = x2;
+    const py = y2;
+    const p1x = px - arrowSize * Math.cos(angle - 0.4);
+    const p1y = py - arrowSize * Math.sin(angle - 0.4);
+    const p2x = px - arrowSize * Math.cos(angle + 0.4);
+    const p2y = py - arrowSize * Math.sin(angle + 0.4);
+    polygon.setAttribute('points', px + ',' + py + ' ' + p1x + ',' + p1y + ' ' + p2x + ',' + p2y);
+    polygon.setAttribute('fill', 'rgba(59,130,246,0.6)');
+    svg.appendChild(polygon);
+  });
+}
+
+function selectComposerNode(id) {
+  composerSelectedNode = id;
+  document.querySelectorAll('.canvas-node').forEach(el => el.classList.remove('cn-selected'));
+  if (id !== null) {
+    const el = document.getElementById('cnode-' + id);
+    if (el) el.classList.add('cn-selected');
+  }
+  updateNodeConfigPanel();
+}
+
+function updateNodeConfigPanel() {
+  const emptyEl = document.getElementById('nodeConfigEmpty');
+  const fieldsEl = document.getElementById('nodeConfigFields');
+
+  if (composerSelectedNode === null) {
+    emptyEl.style.display = 'block';
+    fieldsEl.style.display = 'none';
+    return;
+  }
+
+  const node = composerNodes.find(n => n.id === composerSelectedNode);
+  if (!node) return;
+
+  emptyEl.style.display = 'none';
+  fieldsEl.style.display = 'block';
+
+  document.getElementById('ncpName').value = node.name;
+
+  const isLLM = node.type === 'llm';
+  const isTool = node.type === 'tool';
+  const isRouter = node.type === 'router';
+
+  document.getElementById('ncpModelGroup').style.display = isLLM ? 'block' : 'none';
+  document.getElementById('ncpTempGroup').style.display = isLLM ? 'block' : 'none';
+  document.getElementById('ncpMaxTokGroup').style.display = isLLM ? 'block' : 'none';
+  document.getElementById('ncpToolGroup').style.display = isTool ? 'block' : 'none';
+  document.getElementById('ncpConditionGroup').style.display = isRouter ? 'block' : 'none';
+
+  if (isLLM) {
+    document.getElementById('ncpModel').value = node.model || 'llama-3.1-70b';
+    document.getElementById('ncpTemp').value = node.temperature || 0.7;
+    document.getElementById('ncpTempVal').textContent = node.temperature || 0.7;
+    document.getElementById('ncpMaxTok').value = node.maxTokens || 512;
+    document.getElementById('ncpMaxTokVal').textContent = node.maxTokens || 512;
+  }
+  if (isTool) {
+    document.getElementById('ncpToolName').value = node.toolName || 'web_search';
+  }
+  if (isRouter) {
+    document.getElementById('ncpCondition').value = node.condition || 'tool_needed';
+  }
+}
+
+function applyNodeConfig() {
+  if (composerSelectedNode === null) return;
+  const node = composerNodes.find(n => n.id === composerSelectedNode);
+  if (!node) return;
+
+  node.name = document.getElementById('ncpName').value;
+  if (node.type === 'llm') {
+    node.model = document.getElementById('ncpModel').value;
+    node.temperature = parseFloat(document.getElementById('ncpTemp').value);
+    node.maxTokens = parseInt(document.getElementById('ncpMaxTok').value);
+  }
+  if (node.type === 'tool') {
+    node.toolName = document.getElementById('ncpToolName').value;
+  }
+  if (node.type === 'router') {
+    node.condition = document.getElementById('ncpCondition').value;
+  }
+  renderComposerNode(node);
+}
+
+// Config panel sliders
+document.getElementById('ncpTemp').addEventListener('input', function() {
+  document.getElementById('ncpTempVal').textContent = this.value;
+});
+document.getElementById('ncpMaxTok').addEventListener('input', function() {
+  document.getElementById('ncpMaxTokVal').textContent = this.value;
+});
+
+async function runComposerWorkflow() {
+  if (composerNodes.length === 0) return;
+
+  // Determine execution order via topological sort
+  const order = [];
+  const visited = new Set();
+  function visit(nodeId) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+    // Find nodes that feed into this one
+    composerConnections.filter(c => c.to === nodeId).forEach(c => visit(c.from));
+    order.push(nodeId);
+  }
+  composerNodes.forEach(n => visit(n.id));
+
+  // Reset results
+  composerNodes.forEach(n => { n.result = null; renderComposerNode(n); });
+
+  // Simulate execution
+  let isFirst = true;
+  for (const nodeId of order) {
+    const node = composerNodes.find(n => n.id === nodeId);
+    if (!node) continue;
+
+    await sleep(400);
+
+    if (node.type === 'llm') {
+      if (isFirst) {
+        node.result = 'miss';
+        isFirst = false;
+      } else {
+        node.result = Math.random() < 0.85 ? 'hit' : 'miss';
+      }
+    } else if (node.type === 'tool') {
+      node.result = 'exec';
+    } else {
+      node.result = 'ok';
+    }
+    renderComposerNode(node);
+  }
+}
+
+function clearComposerCanvas() {
+  composerNodes = [];
+  composerConnections = [];
+  composerNextId = 0;
+  composerSelectedNode = null;
+  document.getElementById('composerCanvas').innerHTML = '<svg id="composerSVG" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;"></svg>';
+  selectComposerNode(null);
+}
+
+window.runComposerWorkflow = runComposerWorkflow;
+window.clearComposerCanvas = clearComposerCanvas;
+window.applyNodeConfig = applyNodeConfig;
+
+
+// ================================================================
+// FEATURE C: COST CALCULATOR
+// ================================================================
+
+function updateCostCalculator() {
+  const calls = parseInt(document.getElementById('costCalls').value) || 8;
+  const promptTok = parseInt(document.getElementById('costPromptTok').value) || 2300;
+  const compTok = parseInt(document.getElementById('costCompTok').value) || 500;
+  const cacheRate = (parseInt(document.getElementById('costCacheRate').value) || 85) / 100;
+  const pricePerMTok = parseFloat(document.getElementById('costModelTier').value) || 0.90;
+
+  // Cost per call without llm-d (all cold prefills)
+  const tokensPerCallTotal = promptTok + compTok;
+  const costPerCallCold = (tokensPerCallTotal / 1000000) * pricePerMTok;
+  const costPerInvocationCold = costPerCallCold * calls;
+
+  // Cost per call with llm-d (cache hits skip prompt prefill)
+  const coldCalls = 1 + Math.round(calls * (1 - cacheRate));
+  const hotCalls = calls - coldCalls;
+  const coldCost = (tokensPerCallTotal / 1000000) * pricePerMTok;
+  const hotCost = ((promptTok * 0.1 + compTok) / 1000000) * pricePerMTok; // 90% prompt savings on hit
+  const costPerInvocationHot = (coldCalls * coldCost) + (hotCalls * hotCost);
+
+  const savingsPct = costPerInvocationCold > 0 ? Math.round((1 - costPerInvocationHot / costPerInvocationCold) * 100) : 0;
+
+  // Results
+  const resultsRow = document.getElementById('costResultsRow');
+  resultsRow.innerHTML =
+    '<div class="cost-result-card"><div class="cr-label">Cost / Call (No llm-d)</div><div class="cr-value" style="color:var(--red);">$' + costPerInvocationCold.toFixed(5) + '</div></div>' +
+    '<div class="cost-result-card"><div class="cr-label">Cost / Call (With llm-d)</div><div class="cr-value" style="color:var(--green);">$' + costPerInvocationHot.toFixed(5) + '</div></div>' +
+    '<div class="cost-result-card"><div class="cr-label">Savings %</div><div class="cr-value" style="color:var(--green);">' + savingsPct + '%</div></div>' +
+    '<div class="cost-result-card"><div class="cr-label">Savings / 1000 Calls</div><div class="cr-value" style="color:var(--green);">$' + ((costPerInvocationCold - costPerInvocationHot) * 1000).toFixed(2) + '</div></div>';
+
+  // Scale table
+  const scaleTable = document.getElementById('costScaleTable');
+  const scales = [
+    { label: '1K/day', daily: 1000 },
+    { label: '10K/day', daily: 10000 },
+    { label: '100K/day', daily: 100000 },
+    { label: '1M/day', daily: 1000000 }
+  ];
+
+  let tableHTML = '<tr><th>Scale</th><th>Without llm-d</th><th>With llm-d</th><th>Monthly Savings</th></tr>';
+  scales.forEach(s => {
+    const monthlyCold = costPerInvocationCold * s.daily * 30;
+    const monthlyHot = costPerInvocationHot * s.daily * 30;
+    const monthlySaved = monthlyCold - monthlyHot;
+    tableHTML += '<tr>' +
+      '<td>' + s.label + '</td>' +
+      '<td style="color:var(--red);">$' + formatDollars(monthlyCold) + '/mo</td>' +
+      '<td style="color:var(--green);">$' + formatDollars(monthlyHot) + '/mo</td>' +
+      '<td style="color:var(--green);font-weight:700;">$' + formatDollars(monthlySaved) + '/mo</td>' +
+    '</tr>';
+  });
+  scaleTable.innerHTML = tableHTML;
+}
+
+function formatDollars(val) {
+  if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+  if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
+  return val.toFixed(2);
+}
+
+// Cost calculator event listeners
+document.getElementById('costCalls').addEventListener('input', updateCostCalculator);
+document.getElementById('costPromptTok').addEventListener('input', updateCostCalculator);
+document.getElementById('costCompTok').addEventListener('input', updateCostCalculator);
+document.getElementById('costCacheRate').addEventListener('input', updateCostCalculator);
+document.getElementById('costModelTier').addEventListener('change', updateCostCalculator);
+
+
+// ================================================================
 // BOOT
 // ================================================================
 
 initTrace();
 updateWorkflowPreview();
+initComposer();
+updateCostCalculator();
 </script>
 </body>
 </html>

@@ -1040,7 +1040,7 @@
         </div>
         <h1>Why Agentic Workloads Are the Killer App for KV&nbsp;Cache-Aware Routing</h1>
         <p class="article-subtitle">
-            Your agent makes 7 LLM calls per user query. Without smart routing, you are paying for 7 cold prefills. Here is the math on why that is destroying your latency budget&mdash;and how llm-d fixes it.
+            Your agent makes 7 LLM calls per user query. Without smart routing, you are paying for 7 cold prefills. Here is the math on why that is destroying your latency budget, and how llm-d fixes it.
         </p>
         <div class="author-block">
             <div class="author-avatar">MR</div>
@@ -1226,6 +1226,9 @@
             <li><a href="#latency">Latency Analysis</a></li>
             <li><a href="#cost">Cost Impact</a></li>
             <li><a href="#scaling">The Agentic Scaling Challenge</a></li>
+            <li><a href="#routing-challenges">Agentic Routing Challenges</a></li>
+            <li><a href="#observability">Observability for Agents</a></li>
+            <li><a href="#architecture-patterns">Agentic Architecture Patterns</a></li>
             <li><a href="#production">Production Patterns for Agentic Inference</a></li>
         </ol>
     </div>
@@ -1234,7 +1237,7 @@
     <h2 id="killer-app">Why Agentic Workloads Are the Killer App for KV Cache-Aware Routing</h2>
 
     <p>
-        The era of single-shot LLM calls is ending. The pattern that dominated 2023 and early 2024&mdash;send a prompt, get a completion, done&mdash;is giving way to something far more demanding: <strong>agentic workloads</strong>. An AI agent does not make one LLM call per user request. It makes five. Ten. Sometimes thirty or more. Each call represents a step in a reasoning chain: interpreting the user's intent, deciding which tool to invoke, parsing the tool's output, deciding the next action, synthesizing a final response, and checking its own work along the way.
+        The era of single-shot LLM calls is ending. The pattern that dominated 2023 and early 2024 (send a prompt, get a completion, done) is giving way to something far more demanding: <strong>agentic workloads</strong>. An AI agent does not make one LLM call per user request. It makes five. Ten. Sometimes thirty or more. Each call represents a step in a reasoning chain: interpreting the user's intent, deciding which tool to invoke, parsing the tool's output, deciding the next action, synthesizing a final response, and checking its own work along the way.
     </p>
 
     <p>
@@ -1261,14 +1264,14 @@
     </p>
 
     <p>
-        The math is straightforward and damning. If each call carries roughly 2,300 tokens of shared prefix (a typical system prompt plus tool definitions), and your average prefill throughput is around 5,000&ndash;6,000 tokens per second on a well-utilized GPU, you are spending approximately 400ms just recomputing the KV cache for that prefix on every call. Multiply by eight calls: that is 3.2 seconds of pure waste. The user is staring at a loading spinner for over three seconds longer than necessary, not because the model is slow, but because the infrastructure is doing redundant work.
+        The math is straightforward and damning. If each call carries roughly 2,300 tokens of shared prefix (a typical system prompt plus tool definitions), and your average prefill throughput is around 5,000 to 6,000 tokens per second on a well-utilized GPU, you are spending approximately 400ms just recomputing the KV cache for that prefix on every call. Multiply by eight calls: that is 3.2 seconds of pure waste. The user is staring at a loading spinner for over three seconds longer than necessary, not because the model is slow, but because the infrastructure is doing redundant work.
     </p>
 
     <div class="concept-card">
         <div class="card-label">Key Insight</div>
         <h4>The Compound Latency Effect</h4>
         <p>
-            In traditional single-call LLM applications, a cache miss adds a few hundred milliseconds&mdash;barely noticeable. In agentic workloads, that penalty compounds across every step of the reasoning chain. Ten calls with 400ms of overhead each means 4 seconds of wasted compute. At scale, this is the difference between a snappy agent and one that feels broken.
+            In traditional single-call LLM applications, a cache miss adds a few hundred milliseconds, barely noticeable. In agentic workloads, that penalty compounds across every step of the reasoning chain. Ten calls with 400ms of overhead each means 4 seconds of wasted compute. At scale, this is the difference between a snappy agent and one that feels broken.
         </p>
     </div>
 
@@ -1277,7 +1280,7 @@
     </p>
 
     <p>
-        The result is dramatic. Instead of 3.2 seconds of redundant prefill across eight calls, you pay 400ms once on the first call and roughly 65ms on each subsequent call (for the small amount of new, call-specific context). Total prefill time drops from 3.2 seconds to 855 milliseconds&mdash;a 73% reduction. That is not an optimization. That is a categorical change in the user experience.
+        The result is dramatic. Instead of 3.2 seconds of redundant prefill across eight calls, you pay 400ms once on the first call and roughly 65ms on each subsequent call (for the small amount of new, call-specific context). Total prefill time drops from 3.2 seconds to 855 milliseconds: a 73% reduction. That is not an optimization. That is a categorical change in the user experience.
     </p>
 
     <!-- Section 2: The Prefix Cache Advantage -->
@@ -1288,11 +1291,11 @@
     </p>
 
     <p>
-        When a transformer model processes a prompt, it computes <strong>key</strong> and <strong>value</strong> tensors for every token at every layer of attention. These tensors are the model's "memory" of the tokens it has seen&mdash;they encode the contextual relationships between tokens that the model needs to generate its output. For a model like Llama 3.1 70B with 80 attention layers and a hidden dimension of 8192, each token produces a KV pair that consumes a non-trivial amount of GPU memory and, critically, a non-trivial amount of compute to generate.
+        When a transformer model processes a prompt, it computes <strong>key</strong> and <strong>value</strong> tensors for every token at every layer of attention. These tensors are the model's "memory" of the tokens it has seen. They encode the contextual relationships between tokens that the model needs to generate its output. For a model like Llama 3.1 70B with 80 attention layers and a hidden dimension of 8192, each token produces a KV pair that consumes a non-trivial amount of GPU memory and, critically, a non-trivial amount of compute to generate.
     </p>
 
     <p>
-        The key insight is that <strong>KV cache entries are deterministic for a given prefix</strong>. If two requests share the same first 2,000 tokens, their KV cache entries for those 2,000 tokens are byte-for-byte identical. There is no randomness in the attention computation during prefill&mdash;the model computes the exact same key and value tensors regardless of what comes after the prefix. This means that once you have computed the KV cache for a prefix on a specific GPU, any subsequent request that starts with that same prefix can reuse those cached tensors and skip directly to computing attention for the new tokens.
+        The key insight is that <strong>KV cache entries are deterministic for a given prefix</strong>. If two requests share the same first 2,000 tokens, their KV cache entries for those 2,000 tokens are byte-for-byte identical. There is no randomness in the attention computation during prefill. The model computes the exact same key and value tensors regardless of what comes after the prefix. This means that once you have computed the KV cache for a prefix on a specific GPU, any subsequent request that starts with that same prefix can reuse those cached tensors and skip directly to computing attention for the new tokens.
     </p>
 
     <h3>Why System Prompts and Tool Definitions Are Ideal for Caching</h3>
@@ -1331,23 +1334,23 @@ BEHAVIORAL RULES:
             <strong>Total shared prefix: 2,300 tokens</strong>
         </p>
         <p>
-            Without llm-d, every call recomputes attention for all 2,300 prefix tokens. With llm-d, call 1 computes the prefix and caches it. Calls 2 through N skip directly to the call-specific context&mdash;typically just 50&ndash;200 tokens of new conversation or tool output. That is a <strong>90%+ reduction in prefill work per call</strong>.
+            Without llm-d, every call recomputes attention for all 2,300 prefix tokens. With llm-d, call 1 computes the prefix and caches it. Calls 2 through N skip directly to the call-specific context, typically just 50 to 200 tokens of new conversation or tool output. That is a <strong>90%+ reduction in prefill work per call</strong>.
         </p>
     </div>
 
     <p>
-        The savings are even more pronounced with larger models. Prefill compute scales linearly with both token count and model size. A 2,300-token prefix on a 70B-parameter model takes roughly 400ms to prefill. On a 405B-parameter model, that same prefix might take over a second. In agentic workloads on frontier models, the cost of redundant prefix computation is not just an annoyance&mdash;it is the dominant latency bottleneck.
+        The savings are even more pronounced with larger models. Prefill compute scales linearly with both token count and model size. A 2,300-token prefix on a 70B-parameter model takes roughly 400ms to prefill. On a 405B-parameter model, that same prefix might take over a second. In agentic workloads on frontier models, the cost of redundant prefix computation is not just an annoyance; it is the dominant latency bottleneck.
     </p>
 
     <p>
-        llm-d's EPP component tracks which pods have computed KV caches for which prefixes. When a new inference request arrives, the EPP examines the request's prefix and checks whether any active pod already has that prefix cached. If so, it routes the request to that pod. If not, it selects a pod using load-aware heuristics and marks that pod as the new cache holder for that prefix. This lookup is fast&mdash;on the order of microseconds&mdash;because the EPP maintains an in-memory index of prefix hashes to pod assignments.
+        llm-d's EPP component tracks which pods have computed KV caches for which prefixes. When a new inference request arrives, the EPP examines the request's prefix and checks whether any active pod already has that prefix cached. If so, it routes the request to that pod. If not, it selects a pod using load-aware heuristics and marks that pod as the new cache holder for that prefix. This lookup is fast (on the order of microseconds) because the EPP maintains an in-memory index of prefix hashes to pod assignments.
     </p>
 
     <!-- Section 3: Multi-Turn Conversation Routing -->
     <h2 id="multi-turn">Multi-Turn Conversation Routing: Keeping Full Conversation Context Cached Across Turns</h2>
 
     <p>
-        The prefix advantage extends far beyond the initial system prompt and tool definitions. In multi-turn conversations&mdash;which are the norm for agentic workloads&mdash;each successive turn adds to the prefix. Turn 1's prompt is the system prompt plus tool definitions plus the user's first message. Turn 2's prompt is all of that, plus the model's first response, plus the user's second message. By turn 5, the "prefix" that is shared with the previous turn might be 6,000 tokens or more.
+        The prefix advantage extends far beyond the initial system prompt and tool definitions. In multi-turn conversations (which are the norm for agentic workloads), each successive turn adds to the prefix. Turn 1's prompt is the system prompt plus tool definitions plus the user's first message. Turn 2's prompt is all of that, plus the model's first response, plus the user's second message. By turn 5, the "prefix" that is shared with the previous turn might be 6,000 tokens or more.
     </p>
 
     <p>
@@ -1383,7 +1386,7 @@ BEHAVIORAL RULES:
                     <td>0 (cold start)</td>
                     <td>450ms</td>
                     <td>450ms</td>
-                    <td class="savings">&mdash;</td>
+                    <td class="savings">n/a</td>
                 </tr>
                 <tr>
                     <td>Turn 1, Call 2</td>
@@ -1453,7 +1456,7 @@ BEHAVIORAL RULES:
     </div>
 
     <p>
-        Without sticky routing, each of these calls could land on a different pod, paying the full prefill cost every time. The later turns are even more expensive because the growing conversation history means more tokens to prefill from scratch. With llm-d, the first call pays the cold-start cost, and every subsequent call benefits from the growing cached prefix&mdash;with later turns saving the most.
+        Without sticky routing, each of these calls could land on a different pod, paying the full prefill cost every time. The later turns are even more expensive because the growing conversation history means more tokens to prefill from scratch. With llm-d, the first call pays the cold-start cost, and every subsequent call benefits from the growing cached prefix, with later turns saving the most.
     </p>
 
     <p>
@@ -1482,12 +1485,12 @@ BEHAVIORAL RULES:
             Consider a SaaS platform that hosts AI agents for 50 different customers. Each customer has a unique system prompt, but all 50 agents use the same set of tools (CRM lookup, email send, calendar check, knowledge base search). The tool definitions alone might account for 900 tokens of shared prefix. llm-d can route requests from all 50 agents to a set of pods that keep those shared tool definitions cached, saving 900 tokens of prefill computation on <em>every single call</em> across all customers.
         </p>
         <p>
-            At 1,000 requests per second across all tenants, that is 900,000 tokens per second of redundant prefill eliminated. At typical GPU prefill throughput, that translates to freeing up the equivalent of 150+ GPU-seconds of compute every second&mdash;a substantial portion of the cluster's total capacity returned to productive use.
+            At 1,000 requests per second across all tenants, that is 900,000 tokens per second of redundant prefill eliminated. At typical GPU prefill throughput, that translates to freeing up the equivalent of 150+ GPU-seconds of compute every second: a substantial portion of the cluster's total capacity returned to productive use.
         </p>
     </div>
 
     <p>
-        This multi-agent cache sharing is particularly valuable in platforms that implement a "tool marketplace" pattern, where agents can be composed from a library of standardized tools. The more standardization there is in tool definitions, the more cache sharing llm-d can exploit. This creates a virtuous cycle: standardizing on common tool schemas does not just improve developer experience&mdash;it directly reduces inference costs through better cache utilization.
+        This multi-agent cache sharing is particularly valuable in platforms that implement a "tool marketplace" pattern, where agents can be composed from a library of standardized tools. The more standardization there is in tool definitions, the more cache sharing llm-d can exploit. This creates a virtuous cycle: standardizing on common tool schemas does not just improve developer experience; it directly reduces inference costs through better cache utilization.
     </p>
 
     <p>
@@ -1514,7 +1517,7 @@ BEHAVIORAL RULES:
     </p>
 
     <p>
-        When an MCP-compliant agent starts up, it connects to one or more MCP servers and retrieves their tool manifests. These manifests are translated into the tool definition blocks that form part of the agent's prompt prefix. Because MCP defines a standard schema for tool definitions&mdash;including name, description, input schema with JSON Schema types, and annotations&mdash;the resulting token sequences are highly regular and predictable across different agents that connect to the same MCP servers.
+        When an MCP-compliant agent starts up, it connects to one or more MCP servers and retrieves their tool manifests. These manifests are translated into the tool definition blocks that form part of the agent's prompt prefix. Because MCP defines a standard schema for tool definitions (including name, description, input schema with JSON Schema types, and annotations), the resulting token sequences are highly regular and predictable across different agents that connect to the same MCP servers.
     </p>
 
     <h3>MCP Creates a Natural Caching Hierarchy</h3>
@@ -1524,10 +1527,10 @@ BEHAVIORAL RULES:
     </p>
 
     <ol>
-        <li><strong>Layer 1: MCP tool definitions</strong> &mdash; shared across all agents connecting to the same MCP servers. Highly cacheable.</li>
-        <li><strong>Layer 2: Agent system prompt</strong> &mdash; shared across all instances of the same agent type. Cacheable per agent type.</li>
-        <li><strong>Layer 3: Conversation history</strong> &mdash; unique per conversation session. Cacheable only with sticky routing.</li>
-        <li><strong>Layer 4: Current user message</strong> &mdash; unique per request. Never cached.</li>
+        <li><strong>Layer 1: MCP tool definitions</strong>, shared across all agents connecting to the same MCP servers. Highly cacheable.</li>
+        <li><strong>Layer 2: Agent system prompt</strong>, shared across all instances of the same agent type. Cacheable per agent type.</li>
+        <li><strong>Layer 3: Conversation history</strong>, unique per conversation session. Cacheable only with sticky routing.</li>
+        <li><strong>Layer 4: Current user message</strong>, unique per request. Never cached.</li>
     </ol>
 
     <p>
@@ -1560,7 +1563,7 @@ BEHAVIORAL RULES:
     </div>
 
     <p>
-        MCP also introduces a concept of <strong>prompt templates</strong>&mdash;standardized prompt structures that MCP servers can expose for common tasks. When multiple agents use the same MCP prompt template, the resulting token sequences share even more prefix overlap, further amplifying llm-d's cache hit rates. As MCP adoption grows and tool definitions become more standardized across the ecosystem, the cache efficiency of llm-d-routed inference clusters will improve correspondingly&mdash;a trend that makes the MCP+llm-d combination increasingly compelling over time.
+        MCP also introduces a concept of <strong>prompt templates</strong>: standardized prompt structures that MCP servers can expose for common tasks. When multiple agents use the same MCP prompt template, the resulting token sequences share even more prefix overlap, further amplifying llm-d's cache hit rates. As MCP adoption grows and tool definitions become more standardized across the ecosystem, the cache efficiency of llm-d-routed inference clusters will improve correspondingly, a trend that makes the MCP+llm-d combination increasingly compelling over time.
     </p>
 
     <p>
@@ -1643,7 +1646,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     <h3>At Scale: 1,000 Concurrent Agents</h3>
 
     <p>
-        Now multiply by the number of concurrent agents in a production deployment. A mid-sized platform might run 1,000 concurrent agent executions, each making 8 LLM calls. That is 8,000 inference requests in a burst. Without llm-d, those requests consume 3,750 seconds of cumulative prefill time (across all requests). With llm-d, that drops to 1,107 seconds&mdash;freeing up 2,643 seconds of GPU compute that can be used to serve additional requests instead of recomputing cached prefixes.
+        Now multiply by the number of concurrent agents in a production deployment. A mid-sized platform might run 1,000 concurrent agent executions, each making 8 LLM calls. That is 8,000 inference requests in a burst. Without llm-d, those requests consume 3,750 seconds of cumulative prefill time (across all requests). With llm-d, that drops to 1,107 seconds, freeing up 2,643 seconds of GPU compute that can be used to serve additional requests instead of recomputing cached prefixes.
     </p>
 
     <p>
@@ -1660,12 +1663,12 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
             <strong>With llm-d:</strong> Prefill (1.11s) + Generation (2.4s) + Tool execution (1.2s) + Network overhead (0.3s) = <strong>5.01s total</strong>
         </p>
         <p>
-            Prefill goes from being the dominant latency component (49% of total) to a smaller one (22% of total). The agent's performance becomes bottlenecked by generation speed and tool execution time&mdash;which is where it <em>should</em> be bottlenecked, because those represent actual useful work rather than redundant recomputation.
+            Prefill goes from being the dominant latency component (49% of total) to a smaller one (22% of total). The agent's performance becomes bottlenecked by generation speed and tool execution time, which is where it <em>should</em> be bottlenecked, because those represent actual useful work rather than redundant recomputation.
         </p>
     </div>
 
     <p>
-        There is one more dimension to the latency analysis that matters in practice: <strong>tail latency</strong>. Without cache-aware routing, every call has roughly the same TTFT distribution because every call is doing roughly the same amount of work. With llm-d, calls 2 through N have dramatically lower and more consistent TTFT because the cached prefill is a deterministic operation (cache lookup) rather than a variable one (GPU-dependent prefill computation). This means llm-d does not just improve median latency&mdash;it also tightens the p99, which is often the metric that matters most for user-facing agent applications.
+        There is one more dimension to the latency analysis that matters in practice: <strong>tail latency</strong>. Without cache-aware routing, every call has roughly the same TTFT distribution because every call is doing roughly the same amount of work. With llm-d, calls 2 through N have dramatically lower and more consistent TTFT because the cached prefill is a deterministic operation (cache lookup) rather than a variable one (GPU-dependent prefill computation). This means llm-d does not just improve median latency; it also tightens the p99, which is often the metric that matters most for user-facing agent applications.
     </p>
 
     <!-- Section 7: Cost Impact -->
@@ -1697,7 +1700,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
             </div>
         </div>
         <p class="cost-note">
-            At moderate agent traffic (500&ndash;1,000 concurrent agents during peak hours), cache-aware routing eliminates roughly 70% of redundant prefill compute. For a cluster running 8x A100 GPUs at $2.21/hr each, the freed capacity translates to approximately <strong>$4,200/month in savings</strong>&mdash;either by serving the same traffic on fewer GPUs or by absorbing 33% more traffic on the existing cluster without provisioning additional hardware. At higher traffic volumes or with larger models (which have proportionally higher prefill costs), the savings scale accordingly.
+            At moderate agent traffic (500 to 1,000 concurrent agents during peak hours), cache-aware routing eliminates roughly 70% of redundant prefill compute. For a cluster running 8x A100 GPUs at $2.21/hr each, the freed capacity translates to approximately <strong>$4,200/month in savings</strong>, either by serving the same traffic on fewer GPUs or by absorbing 33% more traffic on the existing cluster without provisioning additional hardware. At higher traffic volumes or with larger models (which have proportionally higher prefill costs), the savings scale accordingly.
         </p>
     </div>
 
@@ -1714,7 +1717,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     <h2 id="scaling">The Agentic Scaling Challenge: Why Agent Workloads Are Burstier and Harder to Predict</h2>
 
     <p>
-        Agentic workloads do not just add more inference requests&mdash;they fundamentally change the <em>shape</em> of traffic. Understanding this is critical for anyone building infrastructure to serve AI agents at scale.
+        Agentic workloads do not just add more inference requests; they fundamentally change the <em>shape</em> of traffic. Understanding this is critical for anyone building infrastructure to serve AI agents at scale.
     </p>
 
     <h3>The Amplification Problem</h3>
@@ -1724,7 +1727,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </p>
 
     <p>
-        Agents break this model entirely. One user request might produce 3 inference calls (a simple lookup) or 25 inference calls (a complex multi-step research task). The amplification factor is <strong>variable and data-dependent</strong>&mdash;it depends on the agent's reasoning, the complexity of the user's request, and the results of intermediate tool calls. You cannot predict it from the input alone. An agent that usually makes 5 calls might make 20 if a tool returns an error and the agent decides to try alternative approaches.
+        Agents break this model entirely. One user request might produce 3 inference calls (a simple lookup) or 25 inference calls (a complex multi-step research task). The amplification factor is <strong>variable and data-dependent</strong>. It depends on the agent's reasoning, the complexity of the user's request, and the results of intermediate tool calls. You cannot predict it from the input alone. An agent that usually makes 5 calls might make 20 if a tool returns an error and the agent decides to try alternative approaches.
     </p>
 
     <div class="stat-grid">
@@ -1753,7 +1756,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </p>
 
     <p>
-        Traditional autoscaling cannot handle these bursts effectively. Kubernetes HPA (Horizontal Pod Autoscaler) typically operates on a 15&ndash;60 second observation window, and spinning up a new vLLM pod takes 30&ndash;120 seconds (model loading alone can take 30+ seconds on large models, and that is before the GPU memory is allocated and the model weights are transferred). By the time the autoscaler detects the burst and provisions new capacity, the burst is already over. The new pods sit idle, costing money, while the next burst hits the existing pods that are still recovering from the previous one.
+        Traditional autoscaling cannot handle these bursts effectively. Kubernetes HPA (Horizontal Pod Autoscaler) typically operates on a 15 to 60 second observation window, and spinning up a new vLLM pod takes 30 to 120 seconds (model loading alone can take 30+ seconds on large models, and that is before the GPU memory is allocated and the model weights are transferred). By the time the autoscaler detects the burst and provisions new capacity, the burst is already over. The new pods sit idle, costing money, while the next burst hits the existing pods that are still recovering from the previous one.
     </p>
 
     <h3>How llm-d's Load-Aware Routing Helps Absorb Bursts</h3>
@@ -1782,7 +1785,450 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
         llm-d also provides metrics and signals that external autoscalers can use to make better scaling decisions. By exposing per-pod queue depths, cache utilization ratios, and request arrival rates through its metrics endpoints, llm-d gives the autoscaler a richer picture of cluster state than simple CPU or memory utilization. A custom autoscaler that integrates with llm-d's metrics can anticipate capacity needs based on the number of active agent sessions and their historical amplification factors, rather than reacting to pod resource utilization after the fact. This predictive approach to scaling is far more effective for bursty agentic workloads than reactive HPA rules.
     </p>
 
-    <!-- Section 9: Production Patterns -->
+    <!-- NEW SECTION A: Agentic Routing Challenges -->
+    <h2 id="routing-challenges">Agentic Routing Challenges: Fan-Out, Cascading Latency, and Retry Storms</h2>
+
+    <p>
+        The routing layer for agentic workloads faces three specific challenges that do not exist (or are much less severe) in traditional single-call LLM applications. Understanding these challenges is essential for designing systems that remain performant and cost-effective as agent complexity grows.
+    </p>
+
+    <h3>Fan-Out Patterns: The Thundering Herd Problem</h3>
+
+    <p>
+        Modern agentic architectures frequently implement fan-out patterns where a single user request triggers N parallel LLM calls. This is particularly common in research and analysis agents. A research agent tasked with "summarize recent developments in quantum computing" might fan out five parallel searches: one for arxiv papers, one for industry news, one for GitHub activity, one for patent filings, and one for conference proceedings. Each of these searches generates its own LLM call to interpret and summarize the results. All five calls happen concurrently, creating a sudden spike of 5x the normal load from what appears to the user as a single request.
+    </p>
+
+    <p>
+        This fan-out creates a <strong>thundering herd problem</strong> at the inference layer. If 100 users simultaneously trigger agents that each fan out to 5 parallel calls, the inference cluster suddenly faces 500 concurrent requests instead of 100. Traditional load balancers distribute these 500 requests evenly across available pods, which sounds reasonable until you consider the KV cache implications. Without cache-aware routing, all 500 requests land on random pods. Even if some of those requests share prefixes (common tool definitions, shared system prompts), the random distribution ensures that shared prefixes are scattered across different pods, eliminating any opportunity for cache reuse.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label"><span class="label-icon">&#9670;</span> Fan-Out Scenario</div>
+        <p>
+            <strong>User request:</strong> "Analyze this pull request for security issues"<br>
+            <strong>Agent fan-out:</strong><br>
+            - Call 1: Scan for SQL injection patterns (parallel)<br>
+            - Call 2: Check for XSS vulnerabilities (parallel)<br>
+            - Call 3: Analyze authentication logic (parallel)<br>
+            - Call 4: Review cryptographic implementations (parallel)<br>
+            - Call 5: Check dependency versions against CVE database (parallel)
+        </p>
+        <p>
+            All five calls share the same system prompt (1,200 tokens) and tool definitions (700 tokens). Without llm-d, each call recomputes 1,900 tokens of shared prefix. With llm-d's cache-aware routing, all five calls route to pods that have the shared prefix cached, saving 7,600 tokens of redundant prefill across the fan-out.
+        </p>
+    </div>
+
+    <p>
+        llm-d's approach to fan-out patterns is to recognize when multiple requests from the same agent session arrive within a short time window (typically 50ms to 200ms) and route them to a pod cluster that can share the cached prefix. The EPP tracks not just individual request prefixes but also <strong>session-level prefix groups</strong>. When a fan-out is detected (multiple requests with the same session ID and similar timestamps), llm-d routes them to pods in the same availability zone or pod group, maximizing the probability that they land on pods sharing the same prefix cache.
+    </p>
+
+    <p>
+        The scale impact is significant. In a deployment with 1,000 concurrent users where 20% trigger fan-out patterns averaging 5 parallel calls each, the instantaneous request load is not 1,000 but 1,800 (800 single-call requests plus 1,000 fan-out calls from 200 users). Cache-aware routing ensures that those 1,000 fan-out calls benefit from shared prefix caching, reducing the effective prefill load from 1,800 full prefills to approximately 1,000 (800 singles + 200 initial fan-out calls that cache the prefix). This is a 44% reduction in prefill compute during peak fan-out periods.
+    </p>
+
+    <h3>Cascading Latency: The Chain Is Only as Fast as Its Slowest Call</h3>
+
+    <p>
+        While fan-out creates parallel load spikes, many agentic workflows involve <strong>sequential dependencies</strong> where one LLM call cannot start until the previous one completes. This creates a cascading latency problem: the total execution time is the sum of all sequential steps, and a single slow call can add hundreds of milliseconds to the entire agent execution.
+    </p>
+
+    <p>
+        Consider a customer support agent handling a refund request. The execution chain looks like this: (1) parse user intent (100ms generation), (2) look up order details via tool call (50ms), (3) LLM interprets order data and decides next step (120ms generation), (4) check refund eligibility via tool call (80ms), (5) LLM determines refund amount and policy (110ms generation), (6) initiate refund via tool call (200ms), (7) LLM confirms success and composes response (140ms generation). This is a seven-step chain where each step depends on the previous one.
+    </p>
+
+    <p>
+        Now add inference latency. Each of those four LLM calls (steps 1, 3, 5, 7) requires a prefill phase before generation can start. Without cache-aware routing, each call hits a random pod and pays the full prefill cost: approximately 400ms per call for a 2,300-token prefix. The total latency becomes: (400+100) + 50 + (400+120) + 80 + (400+110) + 200 + (400+140) = 2,400ms of LLM time plus 330ms of tool time = <strong>2,730ms total</strong>.
+    </p>
+
+    <p>
+        With llm-d, the first call pays the 400ms prefill cost, but calls 2, 3, and 4 only pay 60ms to 80ms for prefilling their unique context (the prefix is cached). The total latency becomes: (400+100) + 50 + (70+120) + 80 + (65+110) + 200 + (60+140) = 1,395ms of LLM time plus 330ms of tool time = <strong>1,725ms total</strong>. That is a 1,005ms (37%) reduction in end-to-end latency, solely from eliminating redundant prefill on sequential calls.
+    </p>
+
+    <div class="concept-card">
+        <div class="card-label">Latency Amplification</div>
+        <h4>Why Cache Misses Hurt More in Sequential Chains</h4>
+        <p>
+            In parallel fan-out, a cache miss on one call does not delay other calls; they proceed independently. In sequential chains, every millisecond of added latency on step N delays all subsequent steps. A single cache miss that adds 350ms to step 3 delays steps 4, 5, 6, and 7 by the same amount. The user experiences not just the 350ms penalty but also the psychological cost of waiting through a longer sequential execution. This is why cache hit rates matter more for sequential agent workflows than for parallel ones.
+        </p>
+    </div>
+
+    <p>
+        llm-d's sticky routing is specifically designed to prevent these cascading latency penalties. By keeping an entire agent session pinned to the same pod (or pod group), llm-d ensures that every call in a sequential chain benefits from the cached prefix computed on the first call. The EPP tracks session IDs and maintains pod affinity for the duration of the session, typically using a TTL-based cache entry that expires after the session ends or after a configurable idle timeout (usually 5 to 15 minutes).
+    </p>
+
+    <h3>Retry Storms: When Failures Multiply Inference Load</h3>
+
+    <p>
+        Agents are brittle. Tool calls fail due to timeouts, rate limits, transient network errors, or malformed responses. When a tool call fails, most agent frameworks retry with a modified prompt, often adding context about the failure ("The previous call to search_database timed out. Try a more specific query"). This retry behavior can trigger <strong>exponential retry storms</strong> where each failure generates additional LLM calls, potentially 2x to 3x the original call volume.
+    </p>
+
+    <p>
+        Here is a concrete example. An agent calls a search tool with a broad query. The search times out. The agent retries with a narrower query, which also times out. The agent then decides to split the search into three parallel narrower queries (fan-out). Two of those three succeed, but one fails. The agent retries the failed query with an even more specific version. What started as one LLM call has now generated six LLM calls (original + first retry + three parallel retries + one final retry). If 10% of agent requests hit this pattern, your inference cluster sees a 15% to 20% load increase from retries alone.
+    </p>
+
+    <p>
+        The interaction with routing is subtle but important. In a naive routing system, each retry lands on a random pod and recomputes the entire prefix from scratch. The retry storm not only increases call volume but also increases prefill compute because every retry is a cache miss. In the six-call example above, that is six full prefills of the 2,300-token prefix: 2,400ms of redundant compute for what should have been one initial prefill plus five incremental updates.
+    </p>
+
+    <div class="callout callout-warning">
+        <div class="callout-icon">&#9888;</div>
+        <div class="callout-content">
+            <p>
+                <strong>Retry storms are self-reinforcing.</strong> Retries increase cluster load. Increased load causes more timeouts and rate limits. More timeouts trigger more retries. Without intelligent routing and backoff policies, this feedback loop can cause cluster-wide degradation where retry traffic crowds out new requests. llm-d's cache-aware routing does not prevent retries, but it ensures that retries do not pay the full prefill penalty, which reduces their impact on overall cluster load.
+            </p>
+        </div>
+    </div>
+
+    <p>
+        Cache-aware routing helps contain retry storms in two ways. First, retries from the same agent session share the same prefix as the original call. If the original call cached the prefix on pod A, llm-d routes the retry to pod A, where the prefix is already in cache. The retry only pays for prefilling the incremental context (the retry-specific error message and modified query), typically 50 to 150 tokens instead of 2,300. This reduces the per-retry prefill cost by 85% to 95%.
+    </p>
+
+    <p>
+        Second, llm-d's EPP can implement <strong>retry-aware load shedding</strong>. When a pod's queue depth exceeds a critical threshold (indicating overload), the EPP can signal to the agent runtime that retries should be delayed or aborted. This is done via HTTP 429 (Too Many Requests) responses with a Retry-After header. Agents that respect this signal will back off, preventing the retry storm from overwhelming the cluster. This requires coordination between the routing layer (llm-d) and the agent runtime, but the result is a system that gracefully degrades under retry load instead of collapsing.
+    </p>
+
+    <p>
+        The production pattern for managing retry storms is to combine cache-aware routing (to minimize the cost of retries that do happen) with exponential backoff and jitter (to spread retry load over time) and circuit breaking (to fail fast when a tool is systematically unavailable). llm-d handles the routing piece; the agent framework must handle backoff and circuit breaking. When these three mechanisms work together, retry storms become a manageable operational concern rather than a catastrophic failure mode.
+    </p>
+
+    <!-- NEW SECTION B: Observability for Agents -->
+    <h2 id="observability">Observability for Agents: Instrumenting Multi-Step Workflows with OpenTelemetry</h2>
+
+    <p>
+        Agentic workloads are opaque. A user submits a request and waits seconds for a response, but what happened during those seconds? Which LLM calls were made? Which tools were invoked? Where did the latency come from? Without proper instrumentation, debugging performance issues in production agents is nearly impossible. This is where <strong>observability</strong> becomes critical, and OpenTelemetry (OTel) has emerged as the standard for distributed tracing in agentic systems.
+    </p>
+
+    <h3>Instrumenting Multi-Step Agent Workflows with OpenTelemetry</h3>
+
+    <p>
+        OpenTelemetry provides a vendor-neutral way to instrument code with <strong>traces</strong> (representing the flow of a request through a system) and <strong>spans</strong> (representing individual operations within that flow). For agentic workloads, the natural mapping is to create a trace for each agent execution and a span for each step within that execution: each LLM call, each tool invocation, and each routing decision.
+    </p>
+
+    <p>
+        Here is what instrumentation looks like in practice. When an agent runtime receives a user request, it creates a parent span representing the entire agent execution. As the agent makes LLM calls, it creates child spans for each call. As it invokes tools, it creates child spans for each tool execution. The result is a hierarchical trace that shows the complete flow of the agent's reasoning, including the time spent in each phase.
+    </p>
+
+    <pre><code>import { trace } from '@opentelemetry/api';
+
+async function executeAgent(userRequest) {
+  const tracer = trace.getTracer('agent-runtime');
+  const parentSpan = tracer.startSpan('agent.execute', {
+    attributes: {
+      'agent.type': 'customer-support',
+      'user.request': userRequest
+    }
+  });
+
+  try {
+    // Step 1: Parse user intent
+    const intentSpan = tracer.startSpan('agent.llm.call', {
+      attributes: { 'llm.step': 'parse-intent' }
+    });
+    const intent = await callLLM(promptForIntent(userRequest));
+    intentSpan.end();
+
+    // Step 2: Tool call to look up order
+    const toolSpan = tracer.startSpan('agent.tool.call', {
+      attributes: { 'tool.name': 'lookup-order' }
+    });
+    const order = await lookupOrder(intent.orderId);
+    toolSpan.end();
+
+    // Step 3: LLM interprets order data
+    const interpretSpan = tracer.startSpan('agent.llm.call', {
+      attributes: { 'llm.step': 'interpret-order' }
+    });
+    const decision = await callLLM(promptForDecision(order));
+    interpretSpan.end();
+
+    // ... more steps ...
+
+    parentSpan.setStatus({ code: SpanStatusCode.OK });
+  } catch (error) {
+    parentSpan.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: error.message
+    });
+  } finally {
+    parentSpan.end();
+  }
+}</code></pre>
+
+    <p>
+        This code creates a trace with a parent span and multiple child spans. Each span has attributes (metadata) that describe what operation it represents, what parameters were used, and whether it succeeded or failed. When this trace is exported to an observability backend (Jaeger, Tempo, Honeycomb), you can visualize the entire agent execution as a waterfall diagram showing which steps ran sequentially, which ran in parallel, and where the time was spent.
+    </p>
+
+    <h3>Correlating Traces Across Agent Steps: Propagating Context Through the Routing Layer</h3>
+
+    <p>
+        The real power of OpenTelemetry for agentic workloads comes from <strong>trace context propagation</strong> across service boundaries. When an agent runtime makes an LLM call to llm-d, which routes the request to a vLLM backend, the trace context must be preserved across all three hops (agent → llm-d → vLLM) so that a single Jaeger trace shows the complete flow including routing decisions.
+    </p>
+
+    <p>
+        This is done via the <code>traceparent</code> HTTP header, part of the W3C Trace Context specification. When the agent runtime makes an inference request to llm-d, it includes a <code>traceparent</code> header that encodes the trace ID and parent span ID. llm-d's routing layer extracts this header, creates its own child span for the routing decision, and forwards the <code>traceparent</code> header (updated with its own span ID) to the vLLM backend. The vLLM backend creates a child span for the inference computation. The result is a three-level trace: agent execution → routing decision → inference computation.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label"><span class="label-icon">&#9670;</span> Trace Context Flow</div>
+        <p>
+            <strong>Step 1:</strong> Agent runtime creates parent span with trace ID <code>abc123</code> and span ID <code>span-001</code>.<br>
+            <strong>Step 2:</strong> Agent makes HTTP request to llm-d with header <code>traceparent: 00-abc123-span-001-01</code>.<br>
+            <strong>Step 3:</strong> llm-d extracts trace context, creates child span <code>span-002</code> for routing decision.<br>
+            <strong>Step 4:</strong> llm-d routes to vLLM pod with header <code>traceparent: 00-abc123-span-002-01</code>.<br>
+            <strong>Step 5:</strong> vLLM creates child span <code>span-003</code> for inference, exports trace to Jaeger.
+        </p>
+        <p>
+            In Jaeger, the trace appears as a single waterfall with three spans: agent execution (5.2s), routing decision (2ms), inference (1.1s). You can see that routing added negligible overhead and that inference accounted for 21% of the total latency.
+        </p>
+    </div>
+
+    <p>
+        llm-d preserves trace context through its routing layer by implementing OpenTelemetry-aware middleware. When a request arrives at the EPP, the middleware extracts the <code>traceparent</code> header, creates a child span for the routing decision (including attributes like <code>routing.strategy: cache-aware</code>, <code>routing.cache-hit: true</code>, <code>routing.pod: vllm-pod-3</code>), and injects the updated trace context into the outbound request to the vLLM backend. This happens transparently for every request, with typical overhead under 1ms.
+    </p>
+
+    <p>
+        The observability payoff is substantial. When an agent execution is slow, you can open the trace in Jaeger and immediately see which step was the bottleneck. Was it prefill (indicating a cache miss)? Was it generation (indicating the model is struggling with the prompt)? Was it a tool call (indicating an external API is slow)? Was it queuing delay at the routing layer (indicating cluster overload)? All of this is visible in the trace without any manual log correlation.
+    </p>
+
+    <h3>Measuring End-to-End Agent Latency vs Individual Call Latency</h3>
+
+    <p>
+        One of the most common observability mistakes in agentic systems is conflating <strong>per-call TTFT</strong> (what vLLM reports) with <strong>end-to-end agent latency</strong> (what the user experiences). These are different metrics, and the gap between them grows with agent complexity.
+    </p>
+
+    <p>
+        Per-call TTFT is the time from when vLLM receives a request to when it emits the first token of the response. This is the metric vLLM exposes in its <code>/metrics</code> endpoint and what most LLM serving benchmarks measure. For a single call, per-call TTFT is a good proxy for user-perceived latency. For agentic workflows, it is not. An agent that makes eight LLM calls with an average TTFT of 150ms might have an end-to-end latency of 5 seconds because the eight calls run sequentially with tool execution and network overhead between them.
+    </p>
+
+    <div class="stat-grid">
+        <div class="stat-box">
+            <div class="stat-value">150ms</div>
+            <div class="stat-label">Average per-call TTFT</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">1,200ms</div>
+            <div class="stat-label">Total LLM time (8 calls)</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">5,000ms</div>
+            <div class="stat-label">End-to-end agent latency</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">3,800ms</div>
+            <div class="stat-label">Non-LLM overhead</div>
+        </div>
+    </div>
+
+    <p>
+        The gap between per-call metrics and end-to-end metrics exists because of <strong>sequential dependencies</strong>, <strong>tool execution time</strong>, and <strong>network round trips</strong>. Each LLM call must wait for the previous tool call to complete. Each tool call adds 50ms to 500ms of latency depending on the external API. Each network round trip (agent → llm-d → vLLM → llm-d → agent) adds 5ms to 20ms depending on network topology. These overheads compound across the agent's call chain.
+    </p>
+
+    <p>
+        The practical metrics to track for agentic observability are:
+    </p>
+
+    <ul>
+        <li><strong>Agent execution time</strong>: Total wall-clock time from user request to final response. This is what the user experiences. Measured at the agent runtime level.</li>
+        <li><strong>Total LLM time</strong>: Sum of TTFT + generation time across all LLM calls in the execution. Measured by summing span durations for all <code>agent.llm.call</code> spans.</li>
+        <li><strong>Total tool time</strong>: Sum of execution time across all tool calls. Measured by summing span durations for all <code>agent.tool.call</code> spans.</li>
+        <li><strong>Routing overhead</strong>: Time spent in llm-d's EPP making routing decisions. Measured by summing span durations for all <code>routing.decision</code> spans.</li>
+        <li><strong>Network overhead</strong>: Time spent in network I/O between services. Calculated as <code>agent execution time - (total LLM time + total tool time + routing overhead)</code>.</li>
+        <li><strong>Cache hit rate</strong>: Percentage of LLM calls that hit the prefix cache. Measured by counting <code>routing.cache-hit: true</code> attributes in routing spans.</li>
+    </ul>
+
+    <p>
+        Tracking these metrics over time reveals performance trends that per-call TTFT cannot capture. For example, if cache hit rate drops from 85% to 60%, you will see end-to-end agent latency increase even if per-call TTFT remains constant. If tool execution time increases due to an external API degradation, end-to-end latency suffers even though LLM performance is unchanged. OpenTelemetry's structured traces and span attributes make it possible to compute these metrics automatically from exported trace data.
+    </p>
+
+    <div class="concept-card">
+        <div class="card-label">Observability Best Practice</div>
+        <h4>Set SLOs on End-to-End Latency, Not Per-Call TTFT</h4>
+        <p>
+            Many teams set performance SLOs based on vLLM's reported TTFT because that is the metric the LLM serving layer exposes. This is a mistake for agentic workloads. The user does not care that each individual LLM call completes in 120ms if the overall agent takes 6 seconds to respond. Set your SLOs on <strong>agent execution time</strong> (p50, p95, p99) and use per-call TTFT as a diagnostic metric for understanding <em>why</em> agent latency is high. OpenTelemetry traces give you the breakdown; your SLO should target the user experience.
+        </p>
+    </div>
+
+    <!-- Continue in next response due to length -->
+
+    <!-- NEW SECTION C: Agentic Architecture Patterns -->
+    <h2 id="architecture-patterns">Agentic Architecture Patterns: How llm-d Optimizes Common Agent Designs</h2>
+
+    <p>
+        Agentic AI has coalesced around a handful of proven architectural patterns. Understanding these patterns and how llm-d optimizes each one is essential for building production agents that are both capable and cost-effective. The four patterns below represent the majority of deployed agentic systems.
+    </p>
+
+    <h3>ReAct Loops: Reason + Act Iterations</h3>
+
+    <p>
+        The <strong>ReAct (Reasoning and Acting)</strong> pattern is one of the most widely used agentic architectures. In a ReAct loop, the agent alternates between reasoning steps (where it decides what to do next) and action steps (where it executes a tool call based on that reasoning). The agent continues this loop until it has enough information to produce a final answer.
+    </p>
+
+    <p>
+        A typical ReAct execution looks like this: (1) the agent receives a user query, (2) it generates a reasoning step explaining what information it needs, (3) it calls a tool to gather that information, (4) it observes the tool result and generates a new reasoning step based on what it learned, (5) it either calls another tool or produces a final answer. Each iteration builds on the previous one, and the conversation history grows with every reasoning and action step.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label"><span class="label-icon">&#9670;</span> ReAct Loop Example</div>
+        <p>
+            <strong>User:</strong> "What is the current stock price of Tesla and how has it changed in the past month?"
+        </p>
+        <p>
+            <strong>Iteration 1:</strong><br>
+            - Reasoning: "I need to look up Tesla's current stock price."<br>
+            - Action: <code>get_stock_price("TSLA")</code><br>
+            - Observation: "$187.32 as of 2:47pm EST"
+        </p>
+        <p>
+            <strong>Iteration 2:</strong><br>
+            - Reasoning: "I have the current price. Now I need historical data for the past month."<br>
+            - Action: <code>get_stock_history("TSLA", days=30)</code><br>
+            - Observation: "30 days ago: $202.15. Change: -7.3%"
+        </p>
+        <p>
+            <strong>Iteration 3:</strong><br>
+            - Reasoning: "I have both data points. I can now answer the user."<br>
+            - Final Answer: "Tesla's current stock price is $187.32. Over the past month, it has decreased by 7.3% from $202.15."
+        </p>
+    </div>
+
+    <p>
+        The challenge for inference routing is that each iteration shares a growing prefix with the previous iteration. Iteration 1 starts with the system prompt (1,500 tokens) plus tool definitions (800 tokens) plus the user query (50 tokens) = 2,350 tokens. Iteration 2 adds the reasoning from iteration 1 (60 tokens) plus the tool result (20 tokens) = 2,430 tokens of prefix. Iteration 3 adds the reasoning from iteration 2 (70 tokens) plus the second tool result (40 tokens) = 2,540 tokens of prefix.
+    </p>
+
+    <p>
+        Without llm-d, each iteration lands on a random pod and recomputes the entire growing prefix from scratch. Iteration 1 pays 427ms for prefill. Iteration 2 pays 442ms. Iteration 3 pays 462ms. Total prefill time: 1,331ms. With llm-d's sticky routing, iteration 1 pays 427ms, but iterations 2 and 3 only pay for the new tokens added since the last iteration: approximately 15ms for iteration 2 and 20ms for iteration 3. Total prefill time: 462ms. That is a 65% reduction.
+    </p>
+
+    <div class="concept-card">
+        <div class="card-label">ReAct Optimization</div>
+        <h4>Why Sticky Routing Is Essential for ReAct</h4>
+        <p>
+            ReAct loops can run for 3 to 15 iterations depending on the complexity of the task. Each iteration builds on the growing conversation history, so the prefix gets longer with every loop. Without sticky routing, the prefill cost per iteration increases linearly as the loop progresses. With sticky routing, only the incremental tokens (the new reasoning and tool result) need to be prefilled on each iteration. The longer the loop, the greater the savings from cache-aware routing.
+        </p>
+    </div>
+
+    <p>
+        llm-d's session-aware routing keeps the entire ReAct loop pinned to the same pod. The first iteration caches the initial prefix (system prompt + tools + user query). Each subsequent iteration reuses that cache and only prefills the new reasoning and observation tokens. For a 10-iteration ReAct loop, this can reduce total prefill time from over 4 seconds to under 600ms, a 85% reduction that directly translates to faster agent response times.
+    </p>
+
+    <h3>Tool-Augmented Generation (TAG): Pausing Mid-Generation for Tool Calls</h3>
+
+    <p>
+        <strong>Tool-Augmented Generation (TAG)</strong> is a pattern where the agent generates text, pauses to call a tool, incorporates the tool result into the context, and then continues generating. Unlike ReAct (which alternates between discrete reasoning and action steps), TAG allows the agent to interleave tool calls within a single generation stream.
+    </p>
+
+    <p>
+        A TAG execution might look like this: the agent starts generating a response ("Based on recent data..."), realizes mid-sentence that it needs a specific data point, pauses generation, calls a tool to fetch that data, and then continues generating with the tool result incorporated into its context. The key difference from ReAct is that the agent does not complete a full reasoning step before calling a tool; it calls the tool as soon as it realizes it needs it, even mid-sentence.
+    </p>
+
+    <p>
+        The inference challenge is that each tool call creates a discontinuity in the generation stream. The agent generates 50 tokens, pauses for a tool call, then resumes generation. From the LLM's perspective, this is two separate inference requests: one for the initial 50 tokens, and one for the continuation after the tool result. The second request's prefix is the first request's full context plus the tool result.
+    </p>
+
+    <pre><code>Request 1 (initial generation):
+  System prompt (1500 tok) + Tools (800 tok) + User query (40 tok)
+  → Generate 50 tokens of response
+  → Agent pauses, calls tool
+
+Tool result returns (30 tokens of data)
+
+Request 2 (continuation):
+  System prompt (1500 tok) + Tools (800 tok) + User query (40 tok)
+  + Generated so far (50 tok) + Tool result (30 tok)
+  → Generate final 80 tokens of response</code></pre>
+
+    <p>
+        Without llm-d, request 2 lands on a random pod and recomputes the full 2,420-token prefix (system + tools + query + first 50 generated tokens + tool result). That is 440ms of prefill for a request that only adds 30 new tokens of context. With llm-d, request 2 routes to the same pod that handled request 1. The KV cache for the first 2,340 tokens is already resident. Only the 80 new tokens (50 generated + 30 tool result) need to be prefilled, taking approximately 15ms.
+    </p>
+
+    <div class="callout callout-bold">
+        <div class="callout-icon">&#9889;</div>
+        <div class="callout-content">
+            <p>
+                <strong>TAG is where cache-aware routing shows its biggest per-call wins.</strong> Because the agent resumes generation immediately after a tool call, the prefix from the previous request is still warm in the cache. Hit rates for TAG continuations can exceed 95% when properly routed. This makes TAG-style agents feel significantly more responsive than ReAct-style agents with equivalent tool call counts.
+            </p>
+        </div>
+    </div>
+
+    <p>
+        llm-d ensures that TAG continuations hit the cache by tracking request sequences within a session. When a request arrives with a session ID that matches a recent request (within the last 5 to 30 seconds), the EPP routes it to the same pod that handled the previous request, assuming that pod still has the session's KV cache resident. This works even if the agent makes multiple parallel tool calls and then resumes generation; llm-d routes the resumption request to the pod with the largest shared prefix, which is almost always the pod that handled the pre-pause generation.
+    </p>
+
+    <h3>Multi-Agent Orchestration: Supervisor Delegates to Worker Agents</h3>
+
+    <p>
+        In <strong>multi-agent orchestration</strong>, a supervisor agent delegates tasks to specialized worker agents. The supervisor receives a user request, breaks it down into subtasks, dispatches each subtask to the appropriate worker (a research worker, a code worker, an analysis worker), and then aggregates the results into a final response. Each worker agent has its own system prompt and tooling, but they may share some common tool definitions (logging, notification, knowledge base access).
+    </p>
+
+    <p>
+        The routing challenge is that the supervisor and workers all make LLM calls, and those calls may share partial prefixes. If the supervisor and all workers share the same 5 common tools (600 tokens of tool definitions), cache-aware routing can exploit that shared prefix even though the supervisor and workers have different system prompts.
+    </p>
+
+    <div class="example-block">
+        <div class="example-label"><span class="label-icon">&#9670;</span> Multi-Agent Orchestration</div>
+        <p>
+            <strong>User request:</strong> "Prepare a competitive analysis report for our Q3 product launch."
+        </p>
+        <p>
+            <strong>Supervisor agent:</strong><br>
+            - Breaks request into: market research, competitor feature comparison, pricing analysis<br>
+            - Dispatches three subtasks to worker agents in parallel
+        </p>
+        <p>
+            <strong>Worker 1 (Research):</strong> Searches news, reports, and market data<br>
+            <strong>Worker 2 (Features):</strong> Analyzes competitor product pages and documentation<br>
+            <strong>Worker 3 (Pricing):</strong> Scrapes pricing pages and compares tiers
+        </p>
+        <p>
+            <strong>Supervisor agent:</strong><br>
+            - Receives results from all three workers<br>
+            - Synthesizes into a final report and returns to user
+        </p>
+    </div>
+
+    <p>
+        Each worker agent might make 3 to 8 LLM calls. The supervisor makes 2 calls (initial task decomposition and final synthesis). That is 11 to 26 LLM calls for a single user request. Without cache-aware routing, each call lands on a random pod. With llm-d, the supervisor and workers route to pods that can share the common tool definitions, and each worker's internal call sequence benefits from sticky routing.
+    </p>
+
+    <p>
+        llm-d's prefix matching enables <strong>cross-agent cache sharing</strong> for multi-agent orchestration. When worker 1 and worker 2 both start their execution, llm-d detects that they share 600 tokens of common tool definitions and routes them to pods that have those tool definitions cached. Worker 1's first call might cache the prefix on pod A. Worker 2's first call routes to pod A (or another pod in the same pod group) and reuses the cached tool definitions, saving 600 tokens of prefill. The supervisor's final synthesis call also routes to a pod with the shared tool definitions cached, even though the supervisor's system prompt is different from the workers.
+    </p>
+
+    <p>
+        The scale impact is significant. In a deployment with 500 concurrent multi-agent requests (each spawning 3 worker agents), there are 2,000 active agent sessions at any given moment. Traditional routing distributes those 2,000 sessions across all available pods, fragmenting the cache. llm-d's cross-agent cache sharing concentrates agents with similar tool definitions onto the same pods, increasing cache hit rates from 20% to 30% (random routing) to 70% to 85% (cache-aware routing). At this scale, that is the difference between needing 20 pods or 12 pods to serve the same traffic.
+    </p>
+
+    <h3>Supervisor/Worker Patterns: Planning Agent Creates Subtasks for Specialist Agents</h3>
+
+    <p>
+        The <strong>supervisor/worker pattern</strong> is a specialization of multi-agent orchestration where the supervisor is a planning agent that creates a detailed execution plan with subtasks, and workers are specialist agents that execute those subtasks independently. The key difference from generic orchestration is that the supervisor and workers have a hierarchical relationship: the supervisor's system prompt is often a superset of the workers' prompts, or the workers' prompts are derived from templates that share structure with the supervisor's prompt.
+    </p>
+
+    <p>
+        This hierarchy creates an opportunity for <strong>prefix nesting</strong>. If the supervisor's system prompt is 2,000 tokens and includes a section that defines the overall task domain, and each worker's system prompt is 1,200 tokens with the same domain definition (400 tokens) plus worker-specific instructions (800 tokens), then the supervisor and workers share a 400-token prefix. llm-d's partial prefix matching can exploit this.
+    </p>
+
+    <div class="concept-card">
+        <div class="card-label">Hierarchical Caching</div>
+        <h4>Supervisor Prompts as Cache Seeds for Workers</h4>
+        <p>
+            When the supervisor's system prompt is a superset of the workers' prompts, the supervisor's first LLM call caches the full prompt including the shared domain definition. When workers start executing, their prompts share the first N tokens with the supervisor's cached prompt. llm-d routes workers to pods that have the supervisor's prefix cached, and the workers reuse the shared portion of the KV cache. This is especially effective when the supervisor runs on a dedicated pod and workers fan out to a pod group that shares cache state with the supervisor's pod.
+        </p>
+    </div>
+
+    <p>
+        Here is a concrete example. A supervisor agent receives "Build a web scraper for product data." Its system prompt defines the task domain ("You are building data extraction tools for e-commerce...") and includes planning instructions. It creates subtasks: (1) design scraper architecture, (2) implement HTML parser, (3) implement rate limiting, (4) write tests. Each subtask is dispatched to a worker agent. The workers' system prompts start with the same domain definition (400 tokens) and then include worker-specific instructions.
+    </p>
+
+    <p>
+        Without llm-d, the supervisor and workers land on random pods. The supervisor's domain definition (400 tokens) is computed 5 times: once for the supervisor and once for each of the 4 workers. With llm-d, the supervisor's first call caches the domain definition. The 4 workers route to pods with that prefix cached, saving 1,600 tokens of redundant prefill across the worker calls (400 tokens × 4 workers). If each worker makes 3 LLM calls, that is 12 calls that all benefit from the shared prefix cache, saving 4,800 tokens of prefill.
+    </p>
+
+    <p>
+        The production pattern is to tag supervisor and worker requests with metadata indicating their relationship (supervisor ID, worker ID, task ID). llm-d's EPP uses this metadata to route workers to pods that handled the supervisor's initial planning call, maximizing prefix sharing. This requires the agent framework to include metadata in the inference request headers, but the routing savings justify the small integration cost.
+    </p>
+
+    <!-- Section 9: Production Patterns for Agentic Inference -->
     <h2 id="production">Production Patterns for Agentic Inference</h2>
 
     <p>
@@ -1792,17 +2238,17 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     <h3>Connection Pooling for Agent-to-Inference Communication</h3>
 
     <p>
-        AI agents are chatty. An agent making 8+ inference calls per execution should not be opening and closing HTTP connections for each call. Connection pooling between the agent runtime and the llm-d ingress is essential. Without it, TCP handshake and TLS negotiation overhead adds 5&ndash;20ms per call&mdash;a cost that compounds across the agent's call chain just like prefill latency does.
+        AI agents are chatty. An agent making 8+ inference calls per execution should not be opening and closing HTTP connections for each call. Connection pooling between the agent runtime and the llm-d ingress is essential. Without it, TCP handshake and TLS negotiation overhead adds 5 to 20ms per call, a cost that compounds across the agent's call chain just like prefill latency does.
     </p>
 
     <p>
-        The recommended pattern is to maintain a pool of persistent HTTP/2 connections between each agent runtime pod and the llm-d routing layer. HTTP/2's multiplexing allows multiple inference requests to fly concurrently over the same connection, which is critical for agents that make parallel tool calls. Configure the pool size based on the maximum concurrent inference requests per agent runtime pod, typically 10&ndash;50 connections for a pod running 20&ndash;100 concurrent agent executions. Monitor connection utilization to right-size the pool: too few connections causes head-of-line blocking on parallel bursts; too many wastes kernel resources on idle sockets.
+        The recommended pattern is to maintain a pool of persistent HTTP/2 connections between each agent runtime pod and the llm-d routing layer. HTTP/2's multiplexing allows multiple inference requests to fly concurrently over the same connection, which is critical for agents that make parallel tool calls. Configure the pool size based on the maximum concurrent inference requests per agent runtime pod, typically 10 to 50 connections for a pod running 20 to 100 concurrent agent executions. Monitor connection utilization to right-size the pool: too few connections causes head-of-line blocking on parallel bursts; too many wastes kernel resources on idle sockets.
     </p>
 
     <h3>Request Coalescing: Batching Shared-Prefix Calls</h3>
 
     <p>
-        When multiple agents share the same prefix and send inference requests at roughly the same time, llm-d can <strong>coalesce</strong> these requests into a single prefill computation. Instead of computing the KV cache for the shared prefix once per request, the router identifies requests with matching prefixes within a short time window (typically 10&ndash;50ms) and batches their prefill computation on the same pod. Each request still gets its own completion, but the shared prefix is computed only once and the resulting KV cache is shared across all requests in the batch.
+        When multiple agents share the same prefix and send inference requests at roughly the same time, llm-d can <strong>coalesce</strong> these requests into a single prefill computation. Instead of computing the KV cache for the shared prefix once per request, the router identifies requests with matching prefixes within a short time window (typically 10 to 50ms) and batches their prefill computation on the same pod. Each request still gets its own completion, but the shared prefix is computed only once and the resulting KV cache is shared across all requests in the batch.
     </p>
 
     <p>
@@ -1812,7 +2258,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     <h3>Priority Queues: Differentiating Interactive and Background Calls</h3>
 
     <p>
-        Not all inference calls within an agent execution are equally urgent. The final response to the user is latency-sensitive&mdash;the user is actively waiting. But intermediate tool-call decisions, background reasoning steps, and self-verification checks are less time-critical. Production agentic systems should tag their inference requests with priority levels, and llm-d should route accordingly.
+        Not all inference calls within an agent execution are equally urgent. The final response to the user is latency-sensitive; the user is actively waiting. But intermediate tool-call decisions, background reasoning steps, and self-verification checks are less time-critical. Production agentic systems should tag their inference requests with priority levels, and llm-d should route accordingly.
     </p>
 
     <div class="example-block">
@@ -1839,7 +2285,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </p>
 
     <p>
-        Implementing this requires the vLLM backends to expose cache statistics to the EPP&mdash;specifically, the number of cache hits versus misses over a rolling window. llm-d's health-check protocol includes these metrics, allowing the EPP to make informed circuit-breaking decisions without adding latency to the critical request path.
+        Implementing this requires the vLLM backends to expose cache statistics to the EPP: specifically, the number of cache hits versus misses over a rolling window. llm-d's health-check protocol includes these metrics, allowing the EPP to make informed circuit-breaking decisions without adding latency to the critical request path.
     </p>
 
     <h3>Graceful Degradation: When All Pods Are Cold</h3>
@@ -1853,7 +2299,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </p>
 
     <p>
-        The graceful degradation strategy also applies at the prefix level. If a new agent type is deployed with a novel system prompt that no pod has cached yet, llm-d treats its first request as a load-balanced cold start and begins building cache affinity from that point forward. Within seconds of the first request, the new prefix is cached and subsequent requests benefit from cache-aware routing. The transition is seamless, automatic, and invisible to the agent application. This "warm on first use" behavior means that deploying new agent types or updating system prompts does not require any cache pre-warming steps&mdash;llm-d handles it as part of normal request processing.
+        The graceful degradation strategy also applies at the prefix level. If a new agent type is deployed with a novel system prompt that no pod has cached yet, llm-d treats its first request as a load-balanced cold start and begins building cache affinity from that point forward. Within seconds of the first request, the new prefix is cached and subsequent requests benefit from cache-aware routing. The transition is seamless, automatic, and invisible to the agent application. This "warm on first use" behavior means that deploying new agent types or updating system prompts does not require any cache pre-warming steps; llm-d handles it as part of normal request processing.
     </p>
 
     <hr>
@@ -1870,11 +2316,23 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </p>
 
     <p>
-        The numbers are clear: for an agent making 8 inference calls per execution, llm-d reduces total prefill time from 3.75 seconds to around 1.1 seconds. At 1,000 concurrent agents, that translates to nearly 44 GPUs' worth of freed compute per minute. For a cluster running 8x A100 GPUs at $2.21/hr each, the prefill savings from cache-aware routing save approximately $4,200/month at moderate agent traffic. As agent complexity grows&mdash;more tools, longer conversations, more sophisticated multi-step reasoning&mdash;the savings only increase.
+        The numbers are clear: for an agent making 8 inference calls per execution, llm-d reduces total prefill time from 3.75 seconds to around 1.1 seconds. At 1,000 concurrent agents, that translates to nearly 44 GPUs' worth of freed compute per minute. For a cluster running 8x A100 GPUs at $2.21/hr each, the prefill savings from cache-aware routing save approximately $4,200/month at moderate agent traffic. As agent complexity grows (more tools, longer conversations, more sophisticated multi-step reasoning), the savings only increase.
     </p>
 
     <p>
-        The agentic era demands inference infrastructure that understands the structure of its workloads. Random routing treats every request as independent. Cache-aware routing recognizes that in agentic systems, requests are deeply correlated&mdash;sharing prefixes, sharing sessions, sharing tool definitions. llm-d is built from the ground up to exploit these correlations, and that is why agentic workloads are its killer app.
+        Beyond the raw performance gains, llm-d enables new agentic architecture patterns that were previously impractical due to latency constraints. ReAct loops can run longer without degrading user experience. Tool-augmented generation becomes viable for interactive applications. Multi-agent orchestration can scale to dozens of concurrent workers without overwhelming the inference cluster. The Model Context Protocol's vision of composable, tool-rich agents becomes operationally feasible when the infrastructure can efficiently handle the high call volumes these agents generate.
+    </p>
+
+    <p>
+        The observability story matters just as much as the performance story. With OpenTelemetry integration, llm-d makes agentic workloads visible in ways they have never been before. When an agent execution is slow, the trace shows exactly why: was it a cache miss? A tool timeout? An overloaded pod? This visibility transforms agent performance optimization from guesswork into data-driven engineering. Teams can set SLOs on end-to-end agent latency, track cache hit rates per agent type, and identify routing inefficiencies before they impact users.
+    </p>
+
+    <p>
+        The agentic era demands inference infrastructure that understands the structure of its workloads. Random routing treats every request as independent. Cache-aware routing recognizes that in agentic systems, requests are deeply correlated: sharing prefixes, sharing sessions, sharing tool definitions. llm-d is built from the ground up to exploit these correlations, and that is why agentic workloads are its killer app.
+    </p>
+
+    <p>
+        If you are building agents today without cache-aware routing, you are paying for the same prefill computation 7 times per user request. Your users are waiting 2 to 4 seconds longer than they need to. Your GPU spend is 30% to 50% higher than it should be. The infrastructure gap between what agents demand and what traditional LLM serving provides is wide, and it is growing with every new agent capability. llm-d closes that gap.
     </p>
 
     <div class="cta-block">
@@ -1899,7 +2357,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
 <footer>
     <div class="footer-inner">
         <div class="footer-author">
-            Written by <strong>Markell Rawls</strong> &mdash; AI Evangelist, Red Hat
+            Written by <strong>Markell Rawls</strong> // AI Evangelist, Red Hat
         </div>
         <div class="footer-cncf">
             llm-d is a CNCF Sandbox project
