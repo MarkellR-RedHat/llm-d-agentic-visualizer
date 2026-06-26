@@ -154,6 +154,101 @@ header {
   color: var(--blue);
 }
 
+/* ── Hero Banner ──────────────────────────────────────── */
+.hero-banner {
+  position: relative;
+  z-index: 10;
+  background: linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(168,85,247,0.06) 50%, rgba(239,68,68,0.06) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.hero-stat {
+  text-align: center;
+}
+
+.hero-stat .hs-number {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.4rem;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-stat .hs-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero-message {
+  max-width: 420px;
+}
+
+.hero-message .hm-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--text-bright);
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.hero-message .hm-sub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.hero-message .hm-highlight {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.hero-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.hero-cta-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 8px 20px;
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  background: rgba(59,130,246,0.12);
+  color: var(--blue);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.hero-cta-btn:hover {
+  background: rgba(59,130,246,0.25);
+  box-shadow: 0 0 16px rgba(59,130,246,0.2);
+}
+
+.hero-cta .hc-sub {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
 /* ── Mode Tabs ──────────────────────────────────────── */
 .mode-tabs {
   position: relative;
@@ -199,6 +294,19 @@ header {
   border-radius: 2px 2px 0 0;
 }
 
+.mode-tab .tab-new {
+  font-size: 0.55rem;
+  background: var(--green);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: top;
+}
+
 /* ── Metrics Dashboard (always visible) ─────────────── */
 .metrics-bar {
   position: relative;
@@ -214,6 +322,7 @@ header {
   text-align: center;
   padding: 12px 8px;
   border-right: 1px solid var(--border);
+  position: relative;
 }
 
 .metric-cell:last-child { border-right: none; }
@@ -243,6 +352,17 @@ header {
 .mc-val.good { color: var(--green); }
 .mc-val.warn { color: var(--amber); }
 .mc-val.bad { color: var(--red); }
+
+/* Sparkline canvas */
+.sparkline-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.sparkline-container canvas {
+  display: block;
+}
 
 /* ── Main content area ──────────────────────────────── */
 .main-content {
@@ -330,7 +450,7 @@ header {
 .timeline-ruler {
   display: flex;
   align-items: center;
-  padding: 4px 0 4px 180px;
+  padding: 4px 0 4px 250px;
   margin-bottom: 4px;
   font-family: var(--font-mono);
   font-size: 0.6rem;
@@ -376,14 +496,26 @@ header {
 
 .trace-span:hover { background: rgba(59,130,246,0.04); }
 .trace-span.selected { background: rgba(59,130,246,0.08); }
+.trace-span.critical-path { background: rgba(239,68,68,0.04); border-left: 2px solid var(--red); }
 
 .span-label {
-  width: 180px;
-  min-width: 180px;
+  width: 250px;
+  min-width: 250px;
   padding-right: 12px;
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.span-service {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  background: rgba(59,130,246,0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .span-indent {
@@ -444,6 +576,17 @@ header {
 .span-bar.tool-exec { background: var(--purple); box-shadow: 0 0 8px rgba(168,85,247,0.3); }
 .span-bar.mcp-call { background: var(--cyan); box-shadow: 0 0 8px rgba(6,182,212,0.3); }
 
+.span-bar-duration {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.7);
+  pointer-events: none;
+}
+
 .span-bar-timing {
   font-family: var(--font-mono);
   font-size: 0.6rem;
@@ -498,6 +641,34 @@ header {
   margin-bottom: 8px;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--border);
+}
+
+/* KV table for detail panel (Jaeger-style) */
+.kv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.kv-table tr {
+  border-bottom: 1px solid rgba(59,130,246,0.06);
+}
+
+.kv-table td {
+  padding: 5px 8px;
+  vertical-align: top;
+}
+
+.kv-table td:first-child {
+  color: var(--text-dim);
+  width: 120px;
+  white-space: nowrap;
+}
+
+.kv-table td:last-child {
+  color: var(--text);
+  word-break: break-all;
 }
 
 /* Pod score table */
@@ -1070,6 +1241,7 @@ header {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px;
+  position: relative;
 }
 
 .mcp-section h3 {
@@ -1083,31 +1255,343 @@ header {
   gap: 8px;
 }
 
+.mcp-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.mcp-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--green);
+}
+
+.mcp-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: mcpPulse 2s ease-in-out infinite;
+}
+
+@keyframes mcpPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+
+.mcp-protocol-tag {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(6,182,212,0.1);
+  color: var(--cyan);
+  border: 1px solid rgba(6,182,212,0.25);
+}
+
 .mcp-flow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px;
+  gap: 0;
+  padding: 14px 10px;
   background: rgba(10,14,23,0.6);
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow-x: auto;
+  position: relative;
 }
 
 .mcp-node {
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 6px;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   white-space: nowrap;
   text-align: center;
   border: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
-.mcp-arrow {
+.mcp-node .mcp-token-count {
+  display: block;
+  font-size: 0.55rem;
   color: var(--text-dim);
-  font-size: 0.8rem;
+  margin-top: 3px;
+}
+
+.mcp-arrow-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 50px;
+  height: 20px;
   flex-shrink: 0;
+}
+
+.mcp-arrow-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 12px;
+  height: 2px;
+  background: var(--border-bright);
+  transform: translateY(-50%);
+}
+
+.mcp-arrow-head {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid var(--border-bright);
+}
+
+.mcp-arrow-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  top: 50%;
+  transform: translateY(-50%);
+  animation: mcpFlowDot 2s linear infinite;
+  box-shadow: 0 0 6px rgba(6,182,212,0.5);
+}
+
+@keyframes mcpFlowDot {
+  0% { left: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: calc(100% - 16px); opacity: 0; }
+}
+
+/* ── Profile Your Agent Mode ───────────────────────── */
+.profile-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 16px;
+}
+
+.profile-config {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.profile-config h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-bright);
+  margin-bottom: 16px;
+}
+
+.profile-slider-group {
+  margin-bottom: 18px;
+}
+
+.profile-slider-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profile-slider-group .psg-val {
+  font-weight: 700;
+  color: var(--blue);
+  font-size: 0.85rem;
+}
+
+.profile-slider-group input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(59,130,246,0.12);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.profile-slider-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--blue);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(59,130,246,0.4);
+}
+
+.profile-slider-group input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--blue);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(59,130,246,0.4);
+}
+
+.profile-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-hero-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.profile-hero-card .phc-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.profile-hero-card .phc-value {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2rem;
+}
+
+.profile-hero-card .phc-sub {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.profile-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.profile-card .pc-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.profile-card .pc-val {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.4rem;
+}
+
+.profile-card .pc-sub {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.profile-scale-table {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.profile-scale-table h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text-bright);
+  margin-bottom: 12px;
+}
+
+.scale-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.scale-cell {
+  background: rgba(10,14,23,0.6);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.scale-cell:hover {
+  border-color: var(--blue);
+  background: rgba(59,130,246,0.04);
+}
+
+.scale-cell .sc-scale {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.scale-cell .sc-requests {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.scale-cell .sc-wasted {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--red);
+  margin-bottom: 4px;
+}
+
+.scale-cell .sc-saved {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.3rem;
+  color: var(--green);
+}
+
+.scale-cell .sc-saved-sub {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  margin-top: 2px;
 }
 
 /* ── Footer ─────────────────────────────────────────── */
@@ -1151,6 +1635,7 @@ footer a:hover { text-decoration: underline; }
   .detail-panel { max-height: 400px; }
   .multi-top { grid-template-columns: 1fr; }
   .builder-layout { grid-template-columns: 1fr; }
+  .profile-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {
@@ -1160,6 +1645,8 @@ footer a:hover { text-decoration: underline; }
   .metrics-bar { grid-template-columns: repeat(3, 1fr); }
   .metric-cell:nth-child(4), .metric-cell:nth-child(5) { display: none; }
   .pod-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-banner { flex-direction: column; gap: 16px; text-align: center; }
+  .scale-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
@@ -1167,6 +1654,7 @@ footer a:hover { text-decoration: underline; }
   .mode-tab { padding: 10px 14px; font-size: 0.75rem; }
   .metrics-bar { grid-template-columns: repeat(2, 1fr); }
   .metric-cell:nth-child(3) { display: none; }
+  .profile-cards-row { grid-template-columns: 1fr; }
 }
 
 /* ── Utility ────────────────────────────────────────── */
@@ -1206,19 +1694,40 @@ footer a:hover { text-decoration: underline; }
   </div>
 </header>
 
+<!-- Hero Banner -->
+<div class="hero-banner">
+  <div class="hero-stat">
+    <div class="hs-number">7</div>
+    <div class="hs-label">LLM calls per query</div>
+  </div>
+  <div class="hero-message">
+    <div class="hm-title">Your agent makes 7 LLM calls per user query.</div>
+    <div class="hm-sub">Without smart routing, you're paying for <span class="hm-highlight">7 cold prefills</span>. With llm-d, calls 2-7 hit warm KV cache -- up to 80% faster TTFT.</div>
+  </div>
+  <div class="hero-stat">
+    <div class="hs-number" style="-webkit-text-fill-color: var(--green);">80%</div>
+    <div class="hs-label">TTFT reduction</div>
+  </div>
+  <div class="hero-cta">
+    <button class="hero-cta-btn" onclick="switchToProfile()">Profile Your Agent</button>
+    <span class="hc-sub">See your savings</span>
+  </div>
+</div>
+
 <div class="mode-tabs" id="modeTabs">
   <button class="mode-tab active" data-mode="trace">Agent Trace</button>
   <button class="mode-tab" data-mode="multi">Multi-Agent</button>
   <button class="mode-tab" data-mode="builder">Agent Builder</button>
   <button class="mode-tab" data-mode="comparison">Comparison</button>
+  <button class="mode-tab" data-mode="profile">Profile Your Agent<span class="tab-new">NEW</span></button>
 </div>
 
 <div class="metrics-bar" id="metricsBar">
-  <div class="metric-cell"><div class="mc-label">Total Execution</div><div class="mc-val" id="metExecTime">--</div><div class="mc-sub" id="metExecSub">waiting</div></div>
-  <div class="metric-cell"><div class="mc-label">Cache Hit Rate</div><div class="mc-val" id="metCacheRate">--</div><div class="mc-sub" id="metCacheSub">--</div></div>
-  <div class="metric-cell"><div class="mc-label">Avg TTFT</div><div class="mc-val" id="metTTFT">--</div><div class="mc-sub" id="metTTFTSub">--</div></div>
-  <div class="metric-cell"><div class="mc-label">Throughput</div><div class="mc-val" id="metThroughput">--</div><div class="mc-sub">tokens/sec</div></div>
-  <div class="metric-cell"><div class="mc-label">Cost Savings</div><div class="mc-val good" id="metSavings">--</div><div class="mc-sub" id="metSavingsSub">vs random routing</div></div>
+  <div class="metric-cell"><div class="mc-label">Total Execution</div><div class="mc-val" id="metExecTime">--</div><div class="mc-sub" id="metExecSub">waiting</div><div class="sparkline-container"><canvas id="sparkExec" width="80" height="20"></canvas></div></div>
+  <div class="metric-cell"><div class="mc-label">Cache Hit Rate</div><div class="mc-val" id="metCacheRate">--</div><div class="mc-sub" id="metCacheSub">--</div><div class="sparkline-container"><canvas id="sparkCache" width="80" height="20"></canvas></div></div>
+  <div class="metric-cell"><div class="mc-label">Avg TTFT</div><div class="mc-val" id="metTTFT">--</div><div class="mc-sub" id="metTTFTSub">--</div><div class="sparkline-container"><canvas id="sparkTTFT" width="80" height="20"></canvas></div></div>
+  <div class="metric-cell"><div class="mc-label">Throughput</div><div class="mc-val" id="metThroughput">--</div><div class="mc-sub">tokens/sec</div><div class="sparkline-container"><canvas id="sparkThroughput" width="80" height="20"></canvas></div></div>
+  <div class="metric-cell"><div class="mc-label">Cost Savings</div><div class="mc-val good" id="metSavings">--</div><div class="mc-sub" id="metSavingsSub">vs random routing</div><div class="sparkline-container"><canvas id="sparkSavings" width="80" height="20"></canvas></div></div>
 </div>
 
 <div class="main-content">
@@ -1229,6 +1738,9 @@ footer a:hover { text-decoration: underline; }
         <div class="trace-header">
           <div class="trace-title">Agent Execution Trace</div>
           <div class="trace-controls">
+            <label style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim);cursor:pointer;">
+              <input type="checkbox" id="criticalPathToggle" style="accent-color:var(--red);width:14px;height:14px;"> Critical Path
+            </label>
             <button class="trace-btn active" id="tracePlayBtn" onclick="toggleTracePlay()">PAUSE</button>
             <button class="trace-btn" onclick="rerunTrace()">RERUN</button>
           </div>
@@ -1251,19 +1763,25 @@ footer a:hover { text-decoration: underline; }
     </div>
 
     <div class="mcp-section">
-      <h3><span class="tag tag-cyan">MCP</span> Model Context Protocol Flow</h3>
+      <div class="mcp-header-row">
+        <h3><span class="tag tag-cyan">MCP</span> Model Context Protocol Flow</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="mcp-live-indicator"><div class="mcp-live-dot"></div>LIVE</div>
+          <span class="mcp-protocol-tag">MCP v1.0</span>
+        </div>
+      </div>
       <div class="mcp-flow" id="mcpFlow">
-        <div class="mcp-node" style="background:rgba(59,130,246,0.08);color:var(--blue);">Agent</div>
-        <div class="mcp-arrow">--&gt;</div>
-        <div class="mcp-node" style="background:rgba(6,182,212,0.08);color:var(--cyan);">MCP Client</div>
-        <div class="mcp-arrow">--&gt;</div>
-        <div class="mcp-node" style="background:rgba(168,85,247,0.08);color:var(--purple);">MCP Server (tool exec)</div>
-        <div class="mcp-arrow">--&gt;</div>
-        <div class="mcp-node" style="background:rgba(59,130,246,0.08);color:var(--blue);">LLM Call via llm-d</div>
-        <div class="mcp-arrow">--&gt;</div>
-        <div class="mcp-node" style="background:rgba(34,197,94,0.08);color:var(--green);">EPP: prefix cache match</div>
-        <div class="mcp-arrow">--&gt;</div>
-        <div class="mcp-node" style="background:rgba(34,197,94,0.08);color:var(--green);">vLLM Pod (cached)</div>
+        <div class="mcp-node" style="background:rgba(59,130,246,0.08);color:var(--blue);">Agent<span class="mcp-token-count" id="mcpTok1">2,048 tok</span></div>
+        <div class="mcp-arrow-container"><div class="mcp-arrow-line"></div><div class="mcp-arrow-head"></div><div class="mcp-arrow-dot"></div></div>
+        <div class="mcp-node" style="background:rgba(6,182,212,0.08);color:var(--cyan);">MCP Client<span class="mcp-token-count" id="mcpTok2">1,024 tok</span></div>
+        <div class="mcp-arrow-container"><div class="mcp-arrow-line"></div><div class="mcp-arrow-head"></div><div class="mcp-arrow-dot" style="animation-delay:0.3s;"></div></div>
+        <div class="mcp-node" style="background:rgba(168,85,247,0.08);color:var(--purple);">MCP Server<span class="mcp-token-count" id="mcpTok3">512 tok</span></div>
+        <div class="mcp-arrow-container"><div class="mcp-arrow-line"></div><div class="mcp-arrow-head"></div><div class="mcp-arrow-dot" style="animation-delay:0.6s;"></div></div>
+        <div class="mcp-node" style="background:rgba(59,130,246,0.08);color:var(--blue);">LLM via llm-d<span class="mcp-token-count" id="mcpTok4">3,072 tok</span></div>
+        <div class="mcp-arrow-container"><div class="mcp-arrow-line"></div><div class="mcp-arrow-head"></div><div class="mcp-arrow-dot" style="animation-delay:0.9s;"></div></div>
+        <div class="mcp-node" style="background:rgba(34,197,94,0.08);color:var(--green);">EPP: cache match<span class="mcp-token-count" id="mcpTok5">prefix 0x...</span></div>
+        <div class="mcp-arrow-container"><div class="mcp-arrow-line"></div><div class="mcp-arrow-head"></div><div class="mcp-arrow-dot" style="animation-delay:1.2s;"></div></div>
+        <div class="mcp-node" style="background:rgba(34,197,94,0.08);color:var(--green);">vLLM Pod<span class="mcp-token-count" id="mcpTok6">cached KV</span></div>
       </div>
       <div style="font-size:0.7rem;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);">MCP tool calls trigger LLM inference through llm-d. Subsequent tool calls share the same system prompt prefix, so EPP routes them to pods with warm KV cache.</div>
     </div>
@@ -1356,6 +1874,32 @@ footer a:hover { text-decoration: underline; }
       </div>
     </div>
   </div>
+
+  <!-- PROFILE YOUR AGENT MODE -->
+  <div class="mode-panel" id="panel-profile">
+    <div class="profile-layout">
+      <div class="profile-config">
+        <h3>Profile Your Agent</h3>
+        <div class="profile-slider-group">
+          <label>LLM Calls per Request <span class="psg-val" id="profileCallsVal">7</span></label>
+          <input type="range" id="profileCalls" min="1" max="30" value="7">
+        </div>
+        <div class="profile-slider-group">
+          <label>System Prompt Size (tokens) <span class="psg-val" id="profilePromptVal">2000</span></label>
+          <input type="range" id="profilePrompt" min="500" max="5000" step="100" value="2000">
+        </div>
+        <div class="profile-slider-group">
+          <label>Number of Tools <span class="psg-val" id="profileToolsVal">5</span></label>
+          <input type="range" id="profileTools" min="1" max="20" value="5">
+        </div>
+        <div style="margin-top:20px;padding:12px;background:rgba(59,130,246,0.06);border:1px solid var(--border);border-radius:8px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim);line-height:1.6;">
+          <strong style="color:var(--text);">How it works:</strong><br>
+          Each LLM call prefills the system prompt + tool definitions. Without KV cache routing, every call pays the full prefill cost. With llm-d, calls 2+ hit warm cache.
+        </div>
+      </div>
+      <div class="profile-results" id="profileResults"></div>
+    </div>
+  </div>
 </div>
 
 <footer>
@@ -1389,6 +1933,73 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 const POD_NAMES = Array.from({length: 8}, (_, i) => 'gpu-pod-' + i);
+
+// Service names for Jaeger-style display
+const SERVICE_MAP = {
+  'llm': 'inference-svc',
+  'tool': 'tool-executor',
+  'mcp': 'mcp-bridge'
+};
+
+// ── Sparkline Data Buffers ──────────────────────────────────────
+
+const sparklineData = {
+  exec: [],
+  cache: [],
+  ttft: [],
+  throughput: [],
+  savings: []
+};
+const SPARKLINE_MAX = 20;
+
+function pushSparkline(key, val) {
+  sparklineData[key].push(val);
+  if (sparklineData[key].length > SPARKLINE_MAX) sparklineData[key].shift();
+}
+
+function drawSparkline(canvasId, data, color, thresholds) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || data.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const min = Math.min(...data) * 0.9;
+  const max = Math.max(...data) * 1.1 || 1;
+  const range = max - min || 1;
+
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+
+  data.forEach((val, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((val - min) / range) * h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Fill area under the line
+  const lastX = w;
+  const lastY = h - ((data[data.length - 1] - min) / range) * h;
+  ctx.lineTo(lastX, h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  ctx.fillStyle = color.replace(')', ',0.08)').replace('rgb', 'rgba');
+  ctx.fill();
+}
+
+function updateAllSparklines() {
+  drawSparkline('sparkExec', sparklineData.exec, 'rgb(59,130,246)');
+  drawSparkline('sparkCache', sparklineData.cache, 'rgb(34,197,94)');
+  drawSparkline('sparkTTFT', sparklineData.ttft, 'rgb(245,158,11)');
+  drawSparkline('sparkThroughput', sparklineData.throughput, 'rgb(6,182,212)');
+  drawSparkline('sparkSavings', sparklineData.savings, 'rgb(34,197,94)');
+}
+
 
 // ── EPP Scoring ─────────────────────────────────────────────────
 
@@ -1445,6 +2056,27 @@ const TRACE_STEPS = [
   { name: 'final_response', label: 'Final Response', type: 'llm', depth: 0, durationBase: 260 }
 ];
 
+// Determine critical path (longest sequential chain)
+function computeCriticalPath(spans) {
+  // Simple heuristic: longest-duration spans that are on depth 0 or 1 and are LLM/MCP
+  const sorted = spans.slice().sort((a, b) => b.durationMs - a.durationMs);
+  const criticalIds = new Set();
+  let totalCritical = 0;
+  const totalDuration = spans.length > 0 ? spans[spans.length - 1].startMs + spans[spans.length - 1].durationMs : 0;
+  const threshold = totalDuration * 0.6;
+
+  for (const span of sorted) {
+    if (totalCritical >= threshold) break;
+    if (span.type === 'llm' || span.type === 'mcp') {
+      criticalIds.add(span.id);
+      totalCritical += span.durationMs;
+    }
+  }
+  // Always include first and last
+  if (spans.length > 0) { criticalIds.add(0); criticalIds.add(spans.length - 1); }
+  return criticalIds;
+}
+
 function generateTraceData() {
   const traceId = hexHash(16);
   const prefixHash = hexHash(8);
@@ -1459,7 +2091,6 @@ function generateTraceData() {
     let cacheType, targetPod, ttft;
 
     if (isLLM || isMCP) {
-      // First call is a miss, second might be partial, rest are hits
       if (idx === 0) { cacheType = 'miss'; }
       else if (idx === 1) { cacheType = 'partial'; }
       else { cacheType = Math.random() < 0.85 ? 'hit' : 'partial'; }
@@ -1481,6 +2112,7 @@ function generateTraceData() {
       name: step.name,
       label: step.label,
       type: step.type,
+      service: SERVICE_MAP[step.type] || 'agent',
       depth: step.depth,
       startMs: startOffset,
       durationMs: duration,
@@ -1495,7 +2127,9 @@ function generateTraceData() {
     };
   });
 
-  return { traceId, prefixHash, spans, totalDuration: currentTime };
+  const criticalPath = computeCriticalPath(spans);
+
+  return { traceId, prefixHash, spans, totalDuration: currentTime, criticalPath };
 }
 
 
@@ -1508,6 +2142,12 @@ let traceRevealIndex = 0;
 let traceTimer = null;
 let tracePlaying = true;
 let selectedSpanId = null;
+let showCriticalPath = false;
+
+document.getElementById('criticalPathToggle').addEventListener('change', function() {
+  showCriticalPath = this.checked;
+  renderTraceSpans();
+});
 
 function initTrace() {
   traceData = generateTraceData();
@@ -1538,6 +2178,7 @@ function renderTraceSpans() {
     const leftPct = (span.startMs / total * 100);
     const widthPct = Math.max(0.5, span.durationMs / total * 100);
     const hidden = idx >= traceRevealIndex;
+    const isCritical = showCriticalPath && traceData.criticalPath.has(idx);
 
     let barClass = 'span-bar';
     if (span.type === 'tool') barClass += ' tool-exec';
@@ -1557,14 +2198,20 @@ function renderTraceSpans() {
 
     const indents = Array.from({length: span.depth}, () => '<span class="span-indent"></span>').join('');
 
-    return '<div class="trace-span' + (selectedSpanId === idx ? ' selected' : '') + '" data-span="' + idx + '" style="opacity:' + (hidden ? '0' : '1') + ';transition:opacity 0.3s;">' +
+    const spanClasses = 'trace-span' +
+      (selectedSpanId === idx ? ' selected' : '') +
+      (isCritical && !hidden ? ' critical-path' : '');
+
+    return '<div class="' + spanClasses + '" data-span="' + idx + '" style="opacity:' + (hidden ? '0' : '1') + ';transition:opacity 0.3s;">' +
       '<div class="span-label">' + indents +
+        '<span class="span-service">' + span.service + '</span>' +
         '<span class="span-icon" style="background:' + iconBg + ';">' + iconLetter + '</span>' +
         '<span class="span-name">' + span.label + '</span>' +
       '</div>' +
       '<div class="span-bar-area">' +
         '<div class="' + barClass + '" style="left:' + leftPct + '%;width:' + widthPct + '%;' + (hidden ? 'opacity:0;' : '') + '">' +
           (span.targetPod !== null ? POD_NAMES[span.targetPod] : span.label) +
+          '<span class="span-bar-duration">' + span.durationMs + 'ms</span>' +
         '</div>' +
         '<span class="span-bar-timing" style="left:' + (leftPct + widthPct) + '%;' + (hidden ? 'opacity:0;' : '') + '">' + span.durationMs + 'ms</span>' +
       '</div>' +
@@ -1638,13 +2285,16 @@ function renderDetailForSpan(span) {
 
   if (span.type === 'tool') {
     panel.innerHTML = '<h3>Tool Execution Detail</h3>' +
-      '<div class="detail-section"><div class="detail-section-title">Tool Info</div>' +
-      '<div class="prefix-hash">' +
-      '<div class="ph-row"><span class="ph-label">Type</span><span class="ph-val">External Tool</span></div>' +
-      '<div class="ph-row"><span class="ph-label">Name</span><span class="ph-val">' + span.label + '</span></div>' +
-      '<div class="ph-row"><span class="ph-label">Duration</span><span class="ph-val">' + span.durationMs + 'ms</span></div>' +
-      '<div class="ph-row"><span class="ph-label">Note</span><span class="ph-val" style="color:var(--text-dim);">Tool execution happens outside LLM inference. The result is fed back as context for the next LLM call, which benefits from prefix caching.</span></div>' +
-      '</div></div>';
+      '<div class="detail-section"><div class="detail-section-title">Tags</div>' +
+      '<table class="kv-table">' +
+      '<tr><td>span.kind</td><td>client</td></tr>' +
+      '<tr><td>service.name</td><td>' + span.service + '</td></tr>' +
+      '<tr><td>tool.name</td><td>' + span.label + '</td></tr>' +
+      '<tr><td>duration</td><td>' + span.durationMs + 'ms</td></tr>' +
+      '<tr><td>status</td><td style="color:var(--green);">OK</td></tr>' +
+      '<tr><td>llm-d.routing</td><td style="color:var(--text-dim);">N/A (external tool)</td></tr>' +
+      '<tr><td>note</td><td style="color:var(--text-dim);">Tool execution happens outside LLM inference. The result is fed back as context for the next LLM call, which benefits from prefix caching.</td></tr>' +
+      '</table></div>';
     return;
   }
 
@@ -1656,6 +2306,20 @@ function renderDetailForSpan(span) {
   else cacheTag = '<span class="tag tag-red">CACHE MISS</span>';
 
   let html = '<h3>' + span.label + ' ' + cacheTag + '</h3>';
+
+  // Tags / Attributes (Jaeger-style KV table)
+  html += '<div class="detail-section"><div class="detail-section-title">Tags / Attributes</div>';
+  html += '<table class="kv-table">';
+  html += '<tr><td>span.kind</td><td>server</td></tr>';
+  html += '<tr><td>service.name</td><td>' + span.service + '</td></tr>';
+  html += '<tr><td>llm-d.pod</td><td style="color:var(--blue);">' + selectedPodName + '</td></tr>';
+  html += '<tr><td>llm-d.cache_type</td><td>' + (span.cacheType === 'hit' ? '<span style="color:var(--green);">hit</span>' : span.cacheType === 'partial' ? '<span style="color:var(--amber);">partial</span>' : '<span style="color:var(--red);">miss</span>') + '</td></tr>';
+  html += '<tr><td>llm-d.prefix_hash</td><td>0x' + span.prefixHash + '</td></tr>';
+  html += '<tr><td>llm-d.ttft_ms</td><td>' + span.ttft + '</td></tr>';
+  html += '<tr><td>llm-d.prefill_saved_ms</td><td>' + span.prefillSaved + '</td></tr>';
+  html += '<tr><td>duration_ms</td><td>' + span.durationMs + '</td></tr>';
+  html += '<tr><td>status</td><td style="color:var(--green);">OK</td></tr>';
+  html += '</table></div>';
 
   // EPP Scores
   html += '<div class="detail-section"><div class="detail-section-title">EPP Pod Scores</div>';
@@ -1749,13 +2413,11 @@ function generateComparisonData() {
   const steps = TRACE_STEPS.map((step, idx) => {
     const isLLM = step.type === 'llm' || step.type === 'mcp';
 
-    // Without llm-d: always cache miss, random pod
     const withoutTtft = isLLM ? ttftWithoutLlmd() : 0;
     const withoutDuration = step.durationBase + Math.round(randRange(40, 120)) + (isLLM ? withoutTtft : 0);
     const withoutStart = withoutTime;
     withoutTime += withoutDuration + randInt(10, 40);
 
-    // With llm-d: cache hits after first
     let withCacheType;
     if (!isLLM) withCacheType = null;
     else if (idx === 0) withCacheType = 'miss';
@@ -1983,7 +2645,6 @@ function renderCacheSharing() {
   const container = document.getElementById('cacheSharingList');
   if (!multiState) return;
 
-  // Group agents by prefix hash
   const groups = {};
   multiState.agents.forEach(a => {
     if (!groups[a.prefixHash]) groups[a.prefixHash] = [];
@@ -2009,12 +2670,10 @@ function multiTick() {
   multiState.tick++;
 
   multiState.agents.forEach((agent, agentIdx) => {
-    // Randomly start/advance agent work
     if (agent.status === 'idle' && Math.random() < 0.15) {
       agent.status = 'working';
       agent.currentStep = MULTI_STEP_NAMES[randInt(0, MULTI_STEP_NAMES.length - 1)];
 
-      // Find pod with matching cache, or least loaded
       let bestPod = 0;
       let bestScore = -1;
       multiState.pods.forEach((pod, pi) => {
@@ -2043,7 +2702,6 @@ function multiTick() {
       pod.load = clamp(pod.load + randRange(5, 15), 10, 95);
 
     } else if (agent.status === 'working' && Math.random() < 0.2) {
-      // Finish current step
       if (agent.targetPod !== null) {
         const pod = multiState.pods[agent.targetPod];
         pod.queue = Math.max(0, pod.queue - 1);
@@ -2055,7 +2713,6 @@ function multiTick() {
     }
   });
 
-  // Decay pod loads
   multiState.pods.forEach(p => {
     p.load = clamp(p.load - randRange(0.5, 2), 10, 95);
   });
@@ -2193,6 +2850,7 @@ function runBuilderAgent() {
       '<div class="span-bar-area">' +
         '<div class="' + barClass + '" style="left:' + leftPct + '%;width:' + widthPct + '%;">' +
           (targetPod !== null ? POD_NAMES[targetPod] + ' | ' + ttft + 'ms' : duration + 'ms') +
+          '<span class="span-bar-duration">' + duration + 'ms</span>' +
         '</div>' +
         '<span class="span-bar-timing" style="left:' + (leftPct + widthPct) + '%;">' + duration + 'ms</span>' +
       '</div>' +
@@ -2212,6 +2870,120 @@ document.querySelectorAll('.tool-check input').forEach(cb => cb.addEventListener
 
 
 // ================================================================
+// MODE: PROFILE YOUR AGENT
+// ================================================================
+
+function initProfile() {
+  updateProfileResults();
+}
+
+function updateProfileResults() {
+  const calls = parseInt(document.getElementById('profileCalls').value);
+  const promptTokens = parseInt(document.getElementById('profilePrompt').value);
+  const tools = parseInt(document.getElementById('profileTools').value);
+
+  // Update display values
+  document.getElementById('profileCallsVal').textContent = calls;
+  document.getElementById('profilePromptVal').textContent = promptTokens.toLocaleString();
+  document.getElementById('profileToolsVal').textContent = tools;
+
+  // Calculations
+  // Prefill time per call (rough estimate: ~0.1ms per token for prefill on a GPU)
+  const tokensPerToolDef = 150;
+  const totalPrefixTokens = promptTokens + (tools * tokensPerToolDef);
+  const prefillTimePerCall = totalPrefixTokens * 0.1; // ms
+  const totalWastedPrefill = prefillTimePerCall * (calls - 1); // first call always cold
+
+  // With llm-d: ~85% cache hit rate after first call, partial hits save ~60%
+  const cacheHitRate = 0.85;
+  const partialRate = 0.10;
+  const hitSavings = prefillTimePerCall * 0.92; // 92% saved on hit
+  const partialSavings = prefillTimePerCall * 0.55;
+  const savedPerRequest = (calls - 1) * (cacheHitRate * hitSavings + partialRate * partialSavings);
+  const savingsPct = totalWastedPrefill > 0 ? Math.round((savedPerRequest / totalWastedPrefill) * 100) : 0;
+
+  // Cost model: rough GPU cost at $2.50/hr
+  const gpuCostPerMs = 2.50 / 3600 / 1000;
+
+  const scaleData = [
+    { label: 'Starter', requests: 100 },
+    { label: 'Growth', requests: 1000 },
+    { label: 'Scale', requests: 10000 }
+  ];
+
+  const container = document.getElementById('profileResults');
+
+  let html = '';
+
+  // Hero card: total wasted prefill
+  html += '<div class="profile-hero-card">' +
+    '<div class="phc-title">Wasted Prefill Time per Request</div>' +
+    '<div class="phc-value" style="color:var(--red);">' + Math.round(totalWastedPrefill) + 'ms</div>' +
+    '<div class="phc-sub">' + (calls - 1) + ' redundant prefills x ' + Math.round(prefillTimePerCall) + 'ms each (' + totalPrefixTokens.toLocaleString() + ' prefix tokens)</div>' +
+  '</div>';
+
+  // Two-card row: savings + cache hit rate
+  html += '<div class="profile-cards-row">' +
+    '<div class="profile-card">' +
+      '<div class="pc-label">Estimated Savings with llm-d</div>' +
+      '<div class="pc-val" style="color:var(--green);">' + Math.round(savedPerRequest) + 'ms</div>' +
+      '<div class="pc-sub">' + savingsPct + '% of wasted prefill recovered</div>' +
+    '</div>' +
+    '<div class="profile-card">' +
+      '<div class="pc-label">Effective TTFT Reduction</div>' +
+      '<div class="pc-val" style="color:var(--green);">' + Math.round(hitSavings) + 'ms</div>' +
+      '<div class="pc-sub">per cache-hit call (~' + Math.round(cacheHitRate * 100) + '% hit rate)</div>' +
+    '</div>' +
+  '</div>';
+
+  // Scale table
+  html += '<div class="profile-scale-table">' +
+    '<h4>Monthly Cost Savings at Scale</h4>' +
+    '<div class="scale-grid">';
+
+  scaleData.forEach(tier => {
+    const dailyWasted = totalWastedPrefill * tier.requests;
+    const dailySaved = savedPerRequest * tier.requests;
+    const monthlySavedMs = dailySaved * 30;
+    const monthlySavedDollars = monthlySavedMs * gpuCostPerMs;
+    const monthlyWastedMs = dailyWasted * 30;
+    const monthlyWastedHours = monthlyWastedMs / 1000 / 3600;
+
+    html += '<div class="scale-cell">' +
+      '<div class="sc-scale">' + tier.label + '</div>' +
+      '<div class="sc-requests">' + tier.requests.toLocaleString() + ' req/day</div>' +
+      '<div class="sc-wasted">' + monthlyWastedHours.toFixed(1) + ' GPU-hrs wasted/mo</div>' +
+      '<div class="sc-saved">$' + (monthlySavedDollars < 1 ? monthlySavedDollars.toFixed(2) : Math.round(monthlySavedDollars).toLocaleString()) + '</div>' +
+      '<div class="sc-saved-sub">saved per month</div>' +
+    '</div>';
+  });
+
+  html += '</div></div>';
+
+  // Breakdown card
+  html += '<div class="profile-card" style="text-align:left;padding:16px;">' +
+    '<div class="pc-label" style="margin-bottom:10px;">Breakdown per Request</div>' +
+    '<table class="kv-table">' +
+    '<tr><td>LLM calls</td><td>' + calls + '</td></tr>' +
+    '<tr><td>System prompt</td><td>' + promptTokens.toLocaleString() + ' tokens</td></tr>' +
+    '<tr><td>Tool definitions</td><td>' + tools + ' tools (' + (tools * tokensPerToolDef).toLocaleString() + ' tokens)</td></tr>' +
+    '<tr><td>Total prefix</td><td>' + totalPrefixTokens.toLocaleString() + ' tokens</td></tr>' +
+    '<tr><td>Prefill time/call</td><td>' + Math.round(prefillTimePerCall) + 'ms</td></tr>' +
+    '<tr><td>Cold prefills (no llm-d)</td><td style="color:var(--red);">' + (calls - 1) + ' x ' + Math.round(prefillTimePerCall) + 'ms = ' + Math.round(totalWastedPrefill) + 'ms</td></tr>' +
+    '<tr><td>With llm-d routing</td><td style="color:var(--green);">' + Math.round(savedPerRequest) + 'ms saved (' + savingsPct + '%)</td></tr>' +
+    '</table>' +
+  '</div>';
+
+  container.innerHTML = html;
+}
+
+// Profile slider listeners
+document.getElementById('profileCalls').addEventListener('input', updateProfileResults);
+document.getElementById('profilePrompt').addEventListener('input', updateProfileResults);
+document.getElementById('profileTools').addEventListener('input', updateProfileResults);
+
+
+// ================================================================
 // GLOBAL METRICS
 // ================================================================
 
@@ -2224,26 +2996,61 @@ function updateGlobalMetrics() {
   const hits = llmSpans.filter(s => s.cacheType === 'hit').length;
   const cacheRate = llmSpans.length > 0 ? Math.round(hits / llmSpans.length * 100) : 0;
   const avgTTFT = llmSpans.length > 0 ? Math.round(llmSpans.reduce((s, sp) => s + sp.ttft, 0) / llmSpans.length) : 0;
+  const throughput = revealed.length > 0 ? Math.round(randRange(3800, 5200)) : 0;
 
-  document.getElementById('metExecTime').textContent = totalExec > 0 ? totalExec + 'ms' : '--';
-  document.getElementById('metExecTime').className = 'mc-val' + (totalExec > 2000 ? ' warn' : ' good');
+  // Color-coded metric values
+  const execEl = document.getElementById('metExecTime');
+  execEl.textContent = totalExec > 0 ? totalExec + 'ms' : '--';
+  execEl.className = 'mc-val' + (totalExec === 0 ? '' : totalExec < 1500 ? ' good' : totalExec < 2500 ? ' warn' : ' bad');
   document.getElementById('metExecSub').textContent = revealed.length + ' steps completed';
 
-  document.getElementById('metCacheRate').textContent = cacheRate > 0 ? cacheRate + '%' : '--';
-  document.getElementById('metCacheRate').className = 'mc-val' + (cacheRate > 60 ? ' good' : (cacheRate > 30 ? ' warn' : ''));
+  const cacheEl = document.getElementById('metCacheRate');
+  cacheEl.textContent = cacheRate > 0 ? cacheRate + '%' : '--';
+  cacheEl.className = 'mc-val' + (cacheRate === 0 ? '' : cacheRate > 60 ? ' good' : cacheRate > 30 ? ' warn' : ' bad');
   document.getElementById('metCacheSub').textContent = hits + '/' + llmSpans.length + ' cache hits';
 
-  document.getElementById('metTTFT').textContent = avgTTFT > 0 ? avgTTFT + 'ms' : '--';
-  document.getElementById('metTTFT').className = 'mc-val' + (avgTTFT < 120 ? ' good' : (avgTTFT < 300 ? ' warn' : ' bad'));
+  const ttftEl = document.getElementById('metTTFT');
+  ttftEl.textContent = avgTTFT > 0 ? avgTTFT + 'ms' : '--';
+  ttftEl.className = 'mc-val' + (avgTTFT === 0 ? '' : avgTTFT < 120 ? ' good' : avgTTFT < 300 ? ' warn' : ' bad');
   document.getElementById('metTTFTSub').textContent = avgTTFT > 0 ? (avgTTFT < 120 ? 'excellent' : (avgTTFT < 300 ? 'moderate' : 'slow')) : '--';
 
-  document.getElementById('metThroughput').textContent = revealed.length > 0 ? Math.round(randRange(3800, 5200)).toLocaleString() : '--';
+  document.getElementById('metThroughput').textContent = throughput > 0 ? throughput.toLocaleString() : '--';
 
   const randomTotalTTFT = llmSpans.length * 450;
   const llmdTotalTTFT = llmSpans.reduce((s, sp) => s + sp.ttft, 0);
   const savings = randomTotalTTFT > 0 ? Math.round((1 - llmdTotalTTFT / randomTotalTTFT) * 100) : 0;
   document.getElementById('metSavings').textContent = savings > 0 ? savings + '%' : '--';
+
+  // Push sparkline data
+  if (totalExec > 0) {
+    pushSparkline('exec', totalExec);
+    pushSparkline('cache', cacheRate);
+    pushSparkline('ttft', avgTTFT);
+    pushSparkline('throughput', throughput);
+    pushSparkline('savings', savings);
+    updateAllSparklines();
+  }
 }
+
+
+// ================================================================
+// MCP TOKEN COUNT ANIMATION
+// ================================================================
+
+let mcpTokenTimer = null;
+
+function animateMCPTokens() {
+  const bases = [2048, 1024, 512, 3072];
+  const ids = ['mcpTok1', 'mcpTok2', 'mcpTok3', 'mcpTok4'];
+  ids.forEach((id, i) => {
+    const jitter = Math.round(randRange(-50, 50));
+    document.getElementById(id).textContent = (bases[i] + jitter).toLocaleString() + ' tok';
+  });
+  // Update prefix hash
+  document.getElementById('mcpTok5').textContent = 'prefix 0x' + hexHash(6);
+}
+
+mcpTokenTimer = setInterval(animateMCPTokens, 3000);
 
 
 // ================================================================
@@ -2252,23 +3059,30 @@ function updateGlobalMetrics() {
 
 let currentMode = 'trace';
 
+function switchToMode(mode) {
+  if (mode === currentMode) return;
+
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.mode-tab[data-mode="' + mode + '"]').classList.add('active');
+
+  document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + mode).classList.add('active');
+
+  currentMode = mode;
+
+  if (mode === 'comparison' && !cmpData) initComparison();
+  if (mode === 'multi' && !multiState) initMultiAgent();
+  if (mode === 'builder') updateWorkflowPreview();
+  if (mode === 'profile') initProfile();
+}
+
+function switchToProfile() {
+  switchToMode('profile');
+}
+
 document.querySelectorAll('.mode-tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    const mode = tab.dataset.mode;
-    if (mode === currentMode) return;
-
-    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-
-    document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('panel-' + mode).classList.add('active');
-
-    currentMode = mode;
-
-    // Initialize mode if needed
-    if (mode === 'comparison' && !cmpData) initComparison();
-    if (mode === 'multi' && !multiState) initMultiAgent();
-    if (mode === 'builder') updateWorkflowPreview();
+    switchToMode(tab.dataset.mode);
   });
 });
 
@@ -2280,6 +3094,7 @@ window.rerunComparison = rerunComparison;
 window.toggleMultiPlay = toggleMultiPlay;
 window.resetMultiAgent = resetMultiAgent;
 window.runBuilderAgent = runBuilderAgent;
+window.switchToProfile = switchToProfile;
 
 
 // ================================================================

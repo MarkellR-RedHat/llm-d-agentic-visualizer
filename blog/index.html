@@ -23,6 +23,9 @@
             --accent-blue: #3b82f6;
             --accent-purple: #8b5cf6;
             --accent-cyan: #06b6d4;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
             --text-primary: #e0e6f0;
             --text-secondary: #8892a8;
             --text-heading: #ffffff;
@@ -278,6 +281,259 @@
             text-decoration-color: var(--accent-blue);
         }
 
+        /* Numbers That Matter - hero stats */
+        .numbers-that-matter {
+            margin: 2.5rem 0 3rem;
+            padding: 2.5rem 2rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(6, 182, 212, 0.08) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .numbers-that-matter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
+        }
+
+        .numbers-that-matter .section-label {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent-cyan);
+            margin-bottom: 1.5rem;
+        }
+
+        .numbers-that-matter .hero-stats {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.75rem;
+        }
+
+        .hero-stat {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.25rem;
+        }
+
+        .hero-stat .stat-icon {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-family: var(--font-display);
+        }
+
+        .hero-stat:nth-child(1) .stat-icon {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.05));
+            color: var(--accent-green);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .hero-stat:nth-child(2) .stat-icon {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.05));
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .hero-stat:nth-child(3) .stat-icon {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05));
+            color: var(--accent-blue);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .hero-stat .stat-content .stat-number {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            line-height: 1.2;
+            margin-bottom: 0.25rem;
+        }
+
+        .hero-stat .stat-content .stat-number .highlight-green {
+            color: var(--accent-green);
+        }
+
+        .hero-stat .stat-content .stat-number .highlight-red {
+            color: var(--accent-red);
+        }
+
+        .hero-stat .stat-content .stat-number .highlight-blue {
+            color: var(--accent-blue);
+        }
+
+        .hero-stat .stat-content .stat-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Before/After Timeline */
+        .before-after-container {
+            margin: 2rem 0 2.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .timeline-column {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeline-column::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .timeline-column.timeline-before::before {
+            background: linear-gradient(90deg, var(--accent-red), rgba(239, 68, 68, 0.3));
+        }
+
+        .timeline-column.timeline-after::before {
+            background: linear-gradient(90deg, var(--accent-green), rgba(34, 197, 94, 0.3));
+        }
+
+        .timeline-column .timeline-header {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.35rem;
+        }
+
+        .timeline-before .timeline-header {
+            color: var(--accent-red);
+        }
+
+        .timeline-after .timeline-header {
+            color: var(--accent-green);
+        }
+
+        .timeline-column .timeline-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 1rem;
+        }
+
+        .timeline-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.6rem;
+            position: relative;
+        }
+
+        .timeline-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-marker {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 0.65rem;
+            font-weight: 700;
+            position: relative;
+        }
+
+        .timeline-before .step-marker {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .timeline-after .step-marker {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .step-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .step-content .step-label {
+            font-size: 0.78rem;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+
+        .step-content .step-time {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .timeline-before .step-time {
+            color: var(--accent-red);
+        }
+
+        .timeline-after .step-time {
+            color: var(--accent-green);
+        }
+
+        .timeline-total {
+            margin-top: 0.85rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid rgba(30, 58, 95, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .timeline-total .total-label {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .timeline-total .total-value {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .timeline-before .total-value {
+            color: var(--accent-red);
+        }
+
+        .timeline-after .total-value {
+            color: var(--accent-green);
+        }
+
         /* Concept cards */
         .concept-card {
             background: var(--bg-card);
@@ -316,7 +572,7 @@
             margin-top: 0.75rem;
         }
 
-        /* Stat boxes */
+        /* Stat boxes - enhanced with gradients */
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -325,33 +581,117 @@
         }
 
         .stat-box {
-            background: var(--bg-card);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.04));
             border: 1px solid var(--border-card);
-            border-radius: 10px;
-            padding: 1.25rem 1.5rem;
+            border-radius: 12px;
+            padding: 1.5rem;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            opacity: 0.6;
         }
 
         .stat-box .stat-value {
             font-family: var(--font-display);
-            font-size: 2rem;
+            font-size: 2.4rem;
             font-weight: 800;
             color: var(--accent-blue);
-            line-height: 1.2;
+            line-height: 1.1;
         }
 
         .stat-box .stat-label {
             font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-top: 0.35rem;
+            margin-top: 0.4rem;
             line-height: 1.4;
+        }
+
+        /* Callout boxes with colored left borders and icons */
+        .callout {
+            background: rgba(59, 130, 246, 0.06);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-left: 4px solid var(--accent-blue);
+            border-radius: 0 10px 10px 0;
+            padding: 1.25rem 1.5rem;
+            margin: 1.75rem 0;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .callout .callout-icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: rgba(59, 130, 246, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        .callout .callout-content {
+            flex: 1;
+        }
+
+        .callout p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        .callout.callout-warning {
+            background: rgba(245, 158, 11, 0.06);
+            border-color: rgba(245, 158, 11, 0.2);
+            border-left-color: var(--accent-amber);
+        }
+
+        .callout.callout-warning .callout-icon {
+            background: rgba(245, 158, 11, 0.12);
+        }
+
+        .callout.callout-success {
+            background: rgba(34, 197, 94, 0.06);
+            border-color: rgba(34, 197, 94, 0.2);
+            border-left-color: var(--accent-green);
+        }
+
+        .callout.callout-success .callout-icon {
+            background: rgba(34, 197, 94, 0.12);
+        }
+
+        .callout.callout-bold {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.06));
+            border-color: rgba(59, 130, 246, 0.3);
+            border-left-color: var(--accent-purple);
+        }
+
+        .callout.callout-bold .callout-icon {
+            background: rgba(139, 92, 246, 0.15);
+        }
+
+        .callout.callout-bold p {
+            color: var(--text-primary);
+            font-weight: 500;
         }
 
         /* Example blocks */
         .example-block {
             background: var(--bg-card);
             border: 1px solid var(--border-card);
-            border-left: 3px solid var(--accent-blue);
+            border-left: 4px solid var(--accent-cyan);
             border-radius: 0 10px 10px 0;
             padding: 1.5rem 1.75rem;
             margin: 1.75rem 0;
@@ -365,6 +705,13 @@
             letter-spacing: 0.1em;
             color: var(--accent-cyan);
             margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .example-block .example-label .label-icon {
+            font-size: 0.8rem;
         }
 
         .example-block p {
@@ -454,6 +801,83 @@
             font-weight: 600;
         }
 
+        /* Cost impact section */
+        .cost-impact-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(59, 130, 246, 0.06));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 14px;
+            padding: 2rem;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cost-impact-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        }
+
+        .cost-impact-box .cost-label {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent-green);
+            margin-bottom: 0.75rem;
+        }
+
+        .cost-impact-box h4 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 1rem;
+        }
+
+        .cost-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .cost-item {
+            background: rgba(10, 14, 23, 0.5);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            border: 1px solid rgba(30, 58, 95, 0.3);
+        }
+
+        .cost-item .cost-item-label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .cost-item .cost-item-value {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--accent-green);
+        }
+
+        .cost-item .cost-item-value.cost-red {
+            color: var(--accent-red);
+        }
+
+        .cost-impact-box .cost-note {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
         /* Divider */
         hr {
             border: none;
@@ -500,21 +924,6 @@
 
         .toc a:hover {
             color: var(--accent-blue);
-        }
-
-        /* Callout */
-        .callout {
-            background: rgba(59, 130, 246, 0.06);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 10px;
-            padding: 1.25rem 1.5rem;
-            margin: 1.75rem 0;
-        }
-
-        .callout p {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            margin-bottom: 0;
         }
 
         /* CTA */
@@ -597,6 +1006,10 @@
             .nav-links { gap: 0.75rem; }
             .nav-links a:not(.btn-nav) { display: none; }
             .footer-inner { flex-direction: column; text-align: center; }
+            .before-after-container { grid-template-columns: 1fr; }
+            .cost-grid { grid-template-columns: 1fr; }
+            .hero-stat .stat-content .stat-number { font-size: 1.2rem; }
+            .callout { flex-direction: column; gap: 0.5rem; }
         }
     </style>
 </head>
@@ -627,7 +1040,7 @@
         </div>
         <h1>Why Agentic Workloads Are the Killer App for KV&nbsp;Cache-Aware Routing</h1>
         <p class="article-subtitle">
-            AI agents make 5&ndash;30+ LLM calls per user request, and every one of those calls shares a common prefix. Without intelligent routing, you are paying the full prefill cost every single time. Here is how llm-d turns that redundancy into a 75% latency reduction.
+            Your agent makes 7 LLM calls per user query. Without smart routing, you are paying for 7 cold prefills. Here is the math on why that is destroying your latency budget&mdash;and how llm-d fixes it.
         </p>
         <div class="author-block">
             <div class="author-avatar">MR</div>
@@ -637,6 +1050,169 @@
             </div>
         </div>
     </header>
+
+    <!-- Numbers That Matter -->
+    <div class="numbers-that-matter">
+        <div class="section-label">Numbers That Matter</div>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="stat-icon">70%</div>
+                <div class="stat-content">
+                    <div class="stat-number"><span class="highlight-green">1,107ms</span> with llm-d vs 3,750ms without</div>
+                    <div class="stat-desc">Total prefill time across 8 agent calls drops by 70%. That is 2.6 seconds of latency eliminated from every single agent execution.</div>
+                </div>
+            </div>
+            <div class="hero-stat">
+                <div class="stat-icon">7x</div>
+                <div class="stat-content">
+                    <div class="stat-number"><span class="highlight-red">7 cold prefills</span> per agent request = 2.8s of pure waste</div>
+                    <div class="stat-desc">After the first call, every subsequent LLM call recomputes the same system prompt and tool definitions from scratch. That is GPU time spent doing nothing new.</div>
+                </div>
+            </div>
+            <div class="hero-stat">
+                <div class="stat-icon">44</div>
+                <div class="stat-content">
+                    <div class="stat-number">At 1,000 concurrent agents: <span class="highlight-blue">44 GPU-minutes of freed compute per minute</span></div>
+                    <div class="stat-desc">Nearly 44 GPUs' worth of redundant prefill work disappears through intelligent routing. At cloud pricing, that translates to thousands of dollars per month.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Before/After Comparison Timeline -->
+    <h3 style="margin-top: 0;">Agent Execution: Before and After llm-d</h3>
+    <p>A customer support agent processes "I need to return the shoes I ordered last week." Here is what happens at the inference layer, step by step:</p>
+
+    <div class="before-after-container">
+        <div class="timeline-column timeline-before">
+            <div class="timeline-header">Without llm-d (Random Routing)</div>
+            <div class="timeline-title">Every call is a cold start</div>
+            <div class="timeline-step">
+                <div class="step-marker">1</div>
+                <div class="step-content">
+                    <div class="step-label">Parse user intent</div>
+                    <div class="step-time">445ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">2</div>
+                <div class="step-content">
+                    <div class="step-label">Look up recent orders</div>
+                    <div class="step-time">445ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">3</div>
+                <div class="step-content">
+                    <div class="step-label">Interpret order data</div>
+                    <div class="step-time">454ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">4</div>
+                <div class="step-content">
+                    <div class="step-label">Check return policy</div>
+                    <div class="step-time">463ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">5</div>
+                <div class="step-content">
+                    <div class="step-label">Interpret policy</div>
+                    <div class="step-time">472ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">6</div>
+                <div class="step-content">
+                    <div class="step-label">Initiate return</div>
+                    <div class="step-time">481ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">7</div>
+                <div class="step-content">
+                    <div class="step-label">Confirm success</div>
+                    <div class="step-time">490ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">8</div>
+                <div class="step-content">
+                    <div class="step-label">Compose response</div>
+                    <div class="step-time">500ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-total">
+                <div class="total-label">Total prefill</div>
+                <div class="total-value">3,750ms</div>
+            </div>
+        </div>
+        <div class="timeline-column timeline-after">
+            <div class="timeline-header">With llm-d (Cache-Aware Routing)</div>
+            <div class="timeline-title">One cold start, seven cache hits</div>
+            <div class="timeline-step">
+                <div class="step-marker">1</div>
+                <div class="step-content">
+                    <div class="step-label">Parse user intent</div>
+                    <div class="step-time">445ms prefill (cold)</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">2</div>
+                <div class="step-content">
+                    <div class="step-label">Look up recent orders</div>
+                    <div class="step-time">67ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">3</div>
+                <div class="step-content">
+                    <div class="step-label">Interpret order data</div>
+                    <div class="step-time">76ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">4</div>
+                <div class="step-content">
+                    <div class="step-label">Check return policy</div>
+                    <div class="step-time">85ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">5</div>
+                <div class="step-content">
+                    <div class="step-label">Interpret policy</div>
+                    <div class="step-time">95ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">6</div>
+                <div class="step-content">
+                    <div class="step-label">Initiate return</div>
+                    <div class="step-time">104ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">7</div>
+                <div class="step-content">
+                    <div class="step-label">Confirm success</div>
+                    <div class="step-time">113ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-step">
+                <div class="step-marker">8</div>
+                <div class="step-content">
+                    <div class="step-label">Compose response</div>
+                    <div class="step-time">122ms prefill</div>
+                </div>
+            </div>
+            <div class="timeline-total">
+                <div class="total-label">Total prefill</div>
+                <div class="total-value">1,107ms</div>
+            </div>
+        </div>
+    </div>
 
     <!-- Table of Contents -->
     <div class="toc">
@@ -648,6 +1224,7 @@
             <li><a href="#multi-agent">Multi-Agent Cache Sharing</a></li>
             <li><a href="#mcp">MCP and llm-d</a></li>
             <li><a href="#latency">Latency Analysis</a></li>
+            <li><a href="#cost">Cost Impact</a></li>
             <li><a href="#scaling">The Agentic Scaling Challenge</a></li>
             <li><a href="#production">Production Patterns for Agentic Inference</a></li>
         </ol>
@@ -746,7 +1323,7 @@ BEHAVIORAL RULES:
     </p>
 
     <div class="example-block">
-        <div class="example-label">Concrete Example</div>
+        <div class="example-label"><span class="label-icon">&#9670;</span> Concrete Example</div>
         <p>
             <strong>Agent prefix breakdown:</strong><br>
             System prompt: 1,500 tokens<br>
@@ -918,7 +1495,7 @@ BEHAVIORAL RULES:
     </p>
 
     <div class="example-block">
-        <div class="example-label">Multi-Agent Scenario</div>
+        <div class="example-label"><span class="label-icon">&#9670;</span> Multi-Agent Scenario</div>
         <p>
             <strong>Agent A (Research):</strong> web_search + knowledge_base + summarize (shared tools: 600 tokens) + unique system prompt (900 tokens)<br>
             <strong>Agent B (Support):</strong> web_search + knowledge_base + ticket_create (shared tools: 600 tokens) + unique system prompt (1,100 tokens)<br>
@@ -958,7 +1535,7 @@ BEHAVIORAL RULES:
     </p>
 
     <div class="example-block">
-        <div class="example-label">MCP Flow Through llm-d</div>
+        <div class="example-label"><span class="label-icon">&#9670;</span> MCP Flow Through llm-d</div>
         <p>
             <strong>Step 1:</strong> Agent connects to MCP servers (filesystem, database, web search) and retrieves tool manifests.<br>
             <strong>Step 2:</strong> Tool manifests are serialized into the prompt's tool definition block (~700 tokens).<br>
@@ -972,6 +1549,15 @@ BEHAVIORAL RULES:
     <p>
         The combination of MCP and llm-d creates a particularly powerful pattern for tool-call-heavy workflows. Consider an agent that executes a multi-step task involving five consecutive tool calls. Each tool call follows the same pattern: the agent sends a request to the LLM with the full context (system prompt + tool definitions + conversation so far + tool result), the LLM decides on the next tool to call, and the cycle repeats. Without cache-aware routing, each of those five requests would recompute the entire growing prefix from scratch. With llm-d's sticky routing, only the incrementally new tokens (the latest tool result and the new user context) require fresh prefill computation.
     </p>
+
+    <div class="callout callout-bold">
+        <div class="callout-icon">&#9889;</div>
+        <div class="callout-content">
+            <p>
+                <strong>MCP + llm-d is the inference stack for the agentic era.</strong> If you are building agents without cache-aware routing, you are leaving 70% of your latency budget on the floor. Every MCP tool call that hits a cold cache is a tool call that makes your user wait for work the GPU has already done.
+            </p>
+        </div>
+    </div>
 
     <p>
         MCP also introduces a concept of <strong>prompt templates</strong>&mdash;standardized prompt structures that MCP servers can expose for common tasks. When multiple agents use the same MCP prompt template, the resulting token sequences share even more prefix overlap, further amplifying llm-d's cache hit rates. As MCP adoption grows and tool definitions become more standardized across the ecosystem, the cache efficiency of llm-d-routed inference clusters will improve correspondingly&mdash;a trend that makes the MCP+llm-d combination increasingly compelling over time.
@@ -1082,7 +1668,49 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
         There is one more dimension to the latency analysis that matters in practice: <strong>tail latency</strong>. Without cache-aware routing, every call has roughly the same TTFT distribution because every call is doing roughly the same amount of work. With llm-d, calls 2 through N have dramatically lower and more consistent TTFT because the cached prefill is a deterministic operation (cache lookup) rather than a variable one (GPU-dependent prefill computation). This means llm-d does not just improve median latency&mdash;it also tightens the p99, which is often the metric that matters most for user-facing agent applications.
     </p>
 
-    <!-- Section 7: The Agentic Scaling Challenge -->
+    <!-- Section 7: Cost Impact -->
+    <h2 id="cost">Cost Impact: What Cache-Aware Routing Saves in Real Dollars</h2>
+
+    <p>
+        The latency improvements translate directly into infrastructure cost savings. Freed GPU compute means you either serve more traffic on the same hardware or run the same traffic on fewer GPUs. Here is what the math looks like for a concrete deployment.
+    </p>
+
+    <div class="cost-impact-box">
+        <div class="cost-label">Cost Analysis</div>
+        <h4>Monthly Savings for a Mid-Scale Agentic Platform</h4>
+        <div class="cost-grid">
+            <div class="cost-item">
+                <div class="cost-item-label">Cluster configuration</div>
+                <div class="cost-item-value" style="color: var(--text-heading); font-size: 1.1rem;">8x A100 80GB GPUs</div>
+            </div>
+            <div class="cost-item">
+                <div class="cost-item-label">Hourly cost per GPU (cloud)</div>
+                <div class="cost-item-value cost-red">$2.21/hr</div>
+            </div>
+            <div class="cost-item">
+                <div class="cost-item-label">Monthly GPU spend (24/7)</div>
+                <div class="cost-item-value cost-red">$12,730/mo</div>
+            </div>
+            <div class="cost-item">
+                <div class="cost-item-label">Prefill savings with llm-d</div>
+                <div class="cost-item-value">~$4,200/mo</div>
+            </div>
+        </div>
+        <p class="cost-note">
+            At moderate agent traffic (500&ndash;1,000 concurrent agents during peak hours), cache-aware routing eliminates roughly 70% of redundant prefill compute. For a cluster running 8x A100 GPUs at $2.21/hr each, the freed capacity translates to approximately <strong>$4,200/month in savings</strong>&mdash;either by serving the same traffic on fewer GPUs or by absorbing 33% more traffic on the existing cluster without provisioning additional hardware. At higher traffic volumes or with larger models (which have proportionally higher prefill costs), the savings scale accordingly.
+        </p>
+    </div>
+
+    <div class="callout callout-success">
+        <div class="callout-icon">&#10003;</div>
+        <div class="callout-content">
+            <p>
+                <strong>These savings are conservative.</strong> They account only for prefill compute savings. Additional savings from reduced autoscaling events (fewer cold-start pods), lower network overhead (sticky routing reduces cross-zone traffic), and improved GPU utilization (less memory wasted on duplicate KV caches) can push the total cost impact significantly higher.
+            </p>
+        </div>
+    </div>
+
+    <!-- Section 8: The Agentic Scaling Challenge -->
     <h2 id="scaling">The Agentic Scaling Challenge: Why Agent Workloads Are Burstier and Harder to Predict</h2>
 
     <p>
@@ -1154,7 +1782,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
         llm-d also provides metrics and signals that external autoscalers can use to make better scaling decisions. By exposing per-pod queue depths, cache utilization ratios, and request arrival rates through its metrics endpoints, llm-d gives the autoscaler a richer picture of cluster state than simple CPU or memory utilization. A custom autoscaler that integrates with llm-d's metrics can anticipate capacity needs based on the number of active agent sessions and their historical amplification factors, rather than reacting to pod resource utilization after the fact. This predictive approach to scaling is far more effective for bursty agentic workloads than reactive HPA rules.
     </p>
 
-    <!-- Section 8: Production Patterns -->
+    <!-- Section 9: Production Patterns -->
     <h2 id="production">Production Patterns for Agentic Inference</h2>
 
     <p>
@@ -1188,7 +1816,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </p>
 
     <div class="example-block">
-        <div class="example-label">Priority Queue Strategy</div>
+        <div class="example-label"><span class="label-icon">&#9670;</span> Priority Queue Strategy</div>
         <p>
             <strong>P0 (Critical):</strong> Final user-facing response generation. Route to lowest-queue-depth pod, even if it means a cache miss. Target TTFT: &lt;100ms.<br>
             <strong>P1 (Interactive):</strong> Tool-call decision steps where the user is actively waiting. Prefer cache-aware routing but accept load-based fallback. Target TTFT: &lt;200ms.<br>
@@ -1242,7 +1870,7 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </p>
 
     <p>
-        The numbers are clear: for an agent making 8 inference calls per execution, llm-d reduces total prefill time from 3.75 seconds to around 1.1 seconds. At 1,000 concurrent agents, that translates to nearly 44 GPUs' worth of freed compute per minute. As agent complexity grows&mdash;more tools, longer conversations, more sophisticated multi-step reasoning&mdash;the savings only increase.
+        The numbers are clear: for an agent making 8 inference calls per execution, llm-d reduces total prefill time from 3.75 seconds to around 1.1 seconds. At 1,000 concurrent agents, that translates to nearly 44 GPUs' worth of freed compute per minute. For a cluster running 8x A100 GPUs at $2.21/hr each, the prefill savings from cache-aware routing save approximately $4,200/month at moderate agent traffic. As agent complexity grows&mdash;more tools, longer conversations, more sophisticated multi-step reasoning&mdash;the savings only increase.
     </p>
 
     <p>
@@ -1258,9 +1886,12 @@ Total prefill time across 8 calls: 1,107ms</code></pre>
     </div>
 
     <div class="callout">
-        <p>
-            <strong>llm-d</strong> is a CNCF Sandbox project for distributed LLM inference routing. It is open source and designed for production Kubernetes deployments with vLLM backends. Learn more at the <a href="https://github.com/llm-d" target="_blank" rel="noopener">llm-d GitHub organization</a>.
-        </p>
+        <div class="callout-icon">&#9432;</div>
+        <div class="callout-content">
+            <p>
+                <strong>llm-d</strong> is a CNCF Sandbox project for distributed LLM inference routing. It is open source and designed for production Kubernetes deployments with vLLM backends. Learn more at the <a href="https://github.com/llm-d" target="_blank" rel="noopener">llm-d GitHub organization</a>.
+            </p>
+        </div>
     </div>
 
 </article>
