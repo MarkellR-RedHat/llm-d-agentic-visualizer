@@ -1,1970 +1,2411 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agentic AI Routing with llm-d | Slide Deck</title>
-<meta name="description" content="How llm-d uses KV cache-aware routing to slash TTFT for agentic AI workloads. A visual story by Markell Rawls.">
-<meta name="author" content="Markell Rawls">
-<link rel="icon" type="image/png" href="https://llm-d.ai/img/llm-d-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700;900&family=Red+Hat+Text:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-/* ================================================================
-   AGENTIC AI ROUTING -- SLIDE DECK
-   Author: Markell Rawls
-   One file. No scrolling. Horizontal slide transitions.
-   ================================================================ */
-
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg: #faf8f5;
-  --card: #ffffff;
-  --text: #2d2a26;
-  --text-secondary: #6b6560;
-  --text-light: #9a9490;
-  --amber: #e8920d;
-  --amber-light: #fef3dc;
-  --coral: #e06050;
-  --coral-light: #fce8e5;
-  --blue: #3a7bd5;
-  --blue-light: #e3edf9;
-  --green: #2d9d5a;
-  --green-light: #e0f5ea;
-  --purple: #7c5cbf;
-  --purple-light: #ede5f7;
-  --shadow-sm: 0 2px 8px rgba(45,42,38,0.06);
-  --shadow-md: 0 4px 20px rgba(45,42,38,0.08);
-  --shadow-lg: 0 8px 40px rgba(45,42,38,0.12);
-  --radius: 16px;
-  --font-display: 'Red Hat Display', sans-serif;
-  --font-text: 'Red Hat Text', sans-serif;
-}
-
-html, body {
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-  font-family: var(--font-text);
-  background: var(--bg);
-  color: var(--text);
-}
-
-/* Flowing gradient background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(232,146,13,0.06) 0%,
-    rgba(58,123,213,0.05) 25%,
-    rgba(224,96,80,0.04) 50%,
-    rgba(45,157,90,0.05) 75%,
-    rgba(124,92,191,0.04) 100%
-  );
-  background-size: 400% 400%;
-  animation: gradientShift 20s ease infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  25% { background-position: 100% 0%; }
-  50% { background-position: 100% 100%; }
-  75% { background-position: 0% 100%; }
-}
-
-/* ── Slides Viewport ─────────────────────────────────── */
-
-.slides-viewport {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.slides-track {
-  display: flex;
-  height: 100%;
-  transition: transform 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
-  will-change: transform;
-}
-
-.slide {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 80px;
-  position: relative;
-  overflow: hidden;
-}
-
-.slide-inner {
-  max-width: 1200px;
-  width: 100%;
-  position: relative;
-  z-index: 2;
-}
-
-/* ── Navigation ──────────────────────────────────────── */
-
-.nav-arrow {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 2px solid rgba(45,42,38,0.12);
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(8px);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  transition: all 0.25s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-arrow:hover {
-  background: var(--card);
-  border-color: var(--amber);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-50%) scale(1.08);
-}
-
-.nav-arrow:active {
-  transform: translateY(-50%) scale(0.96);
-}
-
-.nav-arrow svg {
-  width: 20px;
-  height: 20px;
-  stroke: var(--text);
-  stroke-width: 2.5;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.nav-prev { left: 24px; }
-.nav-next { right: 24px; }
-
-.nav-arrow.hidden { opacity: 0; pointer-events: none; }
-
-/* Dots */
-.nav-dots {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-  z-index: 100;
-  background: rgba(255,255,255,0.8);
-  backdrop-filter: blur(8px);
-  padding: 10px 20px;
-  border-radius: 30px;
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(45,42,38,0.15);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.nav-dot:hover {
-  background: rgba(45,42,38,0.35);
-  transform: scale(1.2);
-}
-
-.nav-dot.active {
-  background: var(--amber);
-  width: 28px;
-  border-radius: 5px;
-}
-
-/* Progress bar */
-.progress-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--amber), var(--coral), var(--blue));
-  z-index: 200;
-  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 0 2px 2px 0;
-}
-
-/* ── Slide Entrance Animations ───────────────────────── */
-
-.slide .anim-item {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.slide.active .anim-item {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.slide.active .anim-item:nth-child(1) { transition-delay: 0.1s; }
-.slide.active .anim-item:nth-child(2) { transition-delay: 0.25s; }
-.slide.active .anim-item:nth-child(3) { transition-delay: 0.4s; }
-.slide.active .anim-item:nth-child(4) { transition-delay: 0.55s; }
-.slide.active .anim-item:nth-child(5) { transition-delay: 0.7s; }
-.slide.active .anim-item:nth-child(6) { transition-delay: 0.85s; }
-.slide.active .anim-item:nth-child(7) { transition-delay: 1.0s; }
-.slide.active .anim-item:nth-child(8) { transition-delay: 1.15s; }
-
-/* ── Typography ──────────────────────────────────────── */
-
-.slide-label {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  padding: 6px 16px;
-  border-radius: 30px;
-  margin-bottom: 20px;
-}
-
-.slide-title {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 3.2rem;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  margin-bottom: 16px;
-  color: var(--text);
-}
-
-.slide-subtitle {
-  font-family: var(--font-text);
-  font-size: 1.25rem;
-  font-weight: 400;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  max-width: 700px;
-  margin-bottom: 32px;
-}
-
-.slide-number {
-  position: absolute;
-  bottom: 20px;
-  right: 40px;
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 6rem;
-  color: rgba(45,42,38,0.04);
-  line-height: 1;
-  z-index: 1;
-}
-
-/* ── Cards ───────────────────────────────────────────── */
-
-.card {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 28px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(45,42,38,0.06);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.card-grid {
-  display: grid;
-  gap: 20px;
-}
-
-.card-grid-2 { grid-template-columns: 1fr 1fr; }
-.card-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-.card-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
-
-/* ── Stat Displays ───────────────────────────────────── */
-
-.stat-huge {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 4.5rem;
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-
-.stat-large {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 2.8rem;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.stat-label {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  margin-top: 8px;
-  font-weight: 500;
-}
-
-.stat-sub {
-  font-size: 0.72rem;
-  color: var(--text-light);
-  margin-top: 4px;
-}
-
-/* Color accents */
-.c-amber { color: var(--amber); }
-.c-coral { color: var(--coral); }
-.c-blue { color: var(--blue); }
-.c-green { color: var(--green); }
-.c-purple { color: var(--purple); }
-.bg-amber { background: var(--amber-light); color: var(--amber); }
-.bg-coral { background: var(--coral-light); color: var(--coral); }
-.bg-blue { background: var(--blue-light); color: var(--blue); }
-.bg-green { background: var(--green-light); color: var(--green); }
-.bg-purple { background: var(--purple-light); color: var(--purple); }
-
-/* ── Tags ────────────────────────────────────────────── */
-
-.tag {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* ── Canvas Container ────────────────────────────────── */
-
-.canvas-container {
-  position: relative;
-  width: 100%;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--card);
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(45,42,38,0.06);
-}
-
-.canvas-container canvas {
-  display: block;
-  width: 100%;
-}
-
-/* ── Flow Diagram (CSS) ──────────────────────────────── */
-
-.flow-row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-
-.flow-node {
-  padding: 14px 20px;
-  border-radius: 12px;
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-align: center;
-  white-space: nowrap;
-  border: 2px solid rgba(45,42,38,0.08);
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  z-index: 2;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.flow-node:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-md);
-}
-
-.flow-node-sub {
-  font-size: 0.65rem;
-  font-weight: 400;
-  color: var(--text-light);
-  margin-top: 3px;
-  font-family: var(--font-text);
-}
-
-.flow-arrow {
-  width: 40px;
-  height: 2px;
-  background: rgba(45,42,38,0.15);
-  position: relative;
-  flex-shrink: 0;
-}
-
-.flow-arrow::after {
-  content: '';
-  position: absolute;
-  right: -1px;
-  top: -4px;
-  border: 5px solid transparent;
-  border-left: 6px solid rgba(45,42,38,0.2);
-}
-
-/* Animated flow dot */
-.flow-arrow .flow-dot {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  top: -2px;
-  animation: flowDotMove 2s linear infinite;
-}
-
-@keyframes flowDotMove {
-  0% { left: 0; opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { left: calc(100% - 6px); opacity: 0; }
-}
-
-/* ── Bar Chart ───────────────────────────────────────── */
-
-.bar-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.bar-label {
-  width: 140px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.bar-track {
-  flex: 1;
-  height: 28px;
-  background: rgba(45,42,38,0.04);
-  border-radius: 8px;
-  overflow: hidden;
-  position: relative;
-}
-
-.bar-fill {
-  height: 100%;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: white;
-  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 0;
-}
-
-.slide.active .bar-fill {
-  /* width set by inline style */
-}
-
-.bar-value {
-  width: 70px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-/* ── Scale Table ─────────────────────────────────────── */
-
-.scale-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.scale-table th {
-  text-align: left;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-light);
-  padding: 10px 16px;
-  border-bottom: 2px solid rgba(45,42,38,0.08);
-}
-
-.scale-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(45,42,38,0.06);
-  font-weight: 500;
-}
-
-.scale-table tr:last-child td {
-  border-bottom: none;
-}
-
-/* ── Pulse animation for live elements ───────────────── */
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.85); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-40px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes countUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Header Branding ─────────────────────────────────── */
-
-.deck-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 32px;
-  z-index: 150;
-  background: rgba(250,248,245,0.8);
-  backdrop-filter: blur(12px);
-}
-
-.deck-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.deck-brand img {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-}
-
-.deck-brand-text {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
-.deck-links {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.deck-link {
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-decoration: none;
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(45,42,38,0.1);
-  transition: all 0.2s ease;
-}
-
-.deck-link:hover {
-  background: var(--card);
-  border-color: var(--amber);
-  color: var(--amber);
-  box-shadow: var(--shadow-sm);
-}
-
-/* ── Slide-specific Layouts ──────────────────────────── */
-
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  align-items: center;
-}
-
-.two-col-wide {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 40px;
-  align-items: start;
-}
-
-/* ── Pod Grid ────────────────────────────────────────── */
-
-.pod-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.pod-cell {
-  background: var(--card);
-  border: 2px solid rgba(45,42,38,0.06);
-  border-radius: 10px;
-  padding: 12px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  transition: all 0.4s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.pod-cell.pod-active {
-  border-color: var(--green);
-  box-shadow: 0 0 20px rgba(45,157,90,0.15);
-}
-
-.pod-cell .pod-cache-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  border-radius: 0 0 10px 10px;
-  transition: width 1s ease;
-}
-
-/* ── Responsive ──────────────────────────────────────── */
-
-@media (max-width: 900px) {
-  .slide { padding: 60px 32px; }
-  .slide-title { font-size: 2.2rem; }
-  .stat-huge { font-size: 3rem; }
-  .stat-large { font-size: 2rem; }
-  .two-col, .two-col-wide { grid-template-columns: 1fr; gap: 24px; }
-  .card-grid-3, .card-grid-4 { grid-template-columns: 1fr 1fr; }
-  .flow-row { flex-wrap: wrap; gap: 8px; justify-content: center; }
-  .flow-arrow { width: 24px; }
-  .pod-grid { grid-template-columns: repeat(2, 1fr); }
-  .nav-arrow { width: 40px; height: 40px; }
-  .nav-prev { left: 12px; }
-  .nav-next { right: 12px; }
-}
-
-@media (max-width: 600px) {
-  .slide { padding: 60px 20px; }
-  .slide-title { font-size: 1.6rem; }
-  .card-grid-2, .card-grid-3, .card-grid-4 { grid-template-columns: 1fr; }
-  .deck-links { display: none; }
-  .bar-label { width: 80px; font-size: 0.72rem; }
-}
-
-/* ── Footer on last slide ────────────────────────────── */
-
-.slide-footer {
-  text-align: center;
-  font-size: 0.78rem;
-  color: var(--text-light);
-  margin-top: 24px;
-}
-
-.slide-footer a {
-  color: var(--blue);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.slide-footer a:hover { text-decoration: underline; }
-
-/* ── Comparison Side-by-Side ─────────────────────────── */
-
-.comparison-pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-.comparison-box {
-  border-radius: var(--radius);
-  padding: 24px;
-  text-align: center;
-}
-
-.comparison-box.without {
-  background: var(--coral-light);
-  border: 2px solid rgba(224,96,80,0.15);
-}
-
-.comparison-box.with {
-  background: var(--green-light);
-  border: 2px solid rgba(45,157,90,0.15);
-}
-
-/* ── Decorative shapes ───────────────────────────────── */
-
-.deco-circle {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.07;
-  pointer-events: none;
-}
-
-/* ── CTA Button ──────────────────────────────────────── */
-
-.cta-btn {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1rem;
-  padding: 14px 32px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.25s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.cta-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.cta-primary {
-  background: var(--amber);
-  color: white;
-}
-
-.cta-primary:hover { background: #d5850c; }
-
-.cta-outline {
-  background: var(--card);
-  color: var(--blue);
-  border: 2px solid var(--blue);
-}
-
-.cta-outline:hover { background: var(--blue-light); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic AI Routing with llm-d</title>
+    <meta name="description" content="How llm-d uses KV cache-aware routing to slash TTFT for agentic AI workloads.">
+    <meta name="author" content="Markell Rawls">
+    <link rel="icon" type="image/png" href="https://llm-d.ai/img/llm-d-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            font-family: 'Red Hat Text', sans-serif;
+            font-weight: 400;
+            color: #2d2a26;
+            line-height: 1.6;
+        }
+        html { background: #faf8f5; }
+        body { background: #faf8f5; }
+        h1,h2,h3,h4,h5,h6 { font-family: 'Red Hat Display', sans-serif; font-weight: 900; color: #2d2a26; }
+
+        /* ============================================================
+           FLOWING BACKGROUND GRADIENT
+           ============================================================ */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: linear-gradient(135deg, #faf8f5 0%, #fef6ee 25%, #f5f0fa 50%, #eef5f2 75%, #faf8f5 100%);
+            background-size: 400% 400%;
+            animation: bgFlow 20s ease infinite;
+        }
+        @keyframes bgFlow {
+            0%   { background-position: 0% 50%; }
+            25%  { background-position: 50% 0%; }
+            50%  { background-position: 100% 50%; }
+            75%  { background-position: 50% 100%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ============================================================
+           PROGRESS BAR
+           ============================================================ */
+        .progress-bar {
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #f59e0b, #f5736c, #3b82f6);
+            z-index: 1000;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* ============================================================
+           SLIDES VIEWPORT & TRACK
+           ============================================================ */
+        .slides-viewport {
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: relative;
+        }
+        .slides-track {
+            display: flex;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .slide {
+            min-width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 48px 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ============================================================
+           SLIDE CONTENT WRAPPERS
+           ============================================================ */
+        .slide-inner {
+            max-width: 1100px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+        .slide-number {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #6b6560;
+            margin-bottom: 12px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .slide.active .slide-number {
+            animation: fadeSlideUp 0.5s 0.1s ease forwards;
+        }
+        .slide-title {
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 12px;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .slide.active .slide-title {
+            animation: fadeSlideUp 0.6s 0.2s ease forwards;
+        }
+        .slide-subtitle {
+            font-size: clamp(1rem, 1.8vw, 1.2rem);
+            color: #6b6560;
+            max-width: 700px;
+            margin: 0 auto 36px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .slide.active .slide-subtitle {
+            animation: fadeSlideUp 0.5s 0.35s ease forwards;
+        }
+        .slide-body {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .slide.active .slide-body {
+            animation: fadeSlideUp 0.6s 0.45s ease forwards;
+        }
+
+        /* ============================================================
+           ENTRANCE ANIMATIONS
+           ============================================================ */
+        @keyframes fadeSlideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.15); }
+            50% { box-shadow: 0 0 40px rgba(245,158,11,0.3); }
+        }
+
+        .stagger-1 { animation-delay: 0.5s !important; }
+        .stagger-2 { animation-delay: 0.65s !important; }
+        .stagger-3 { animation-delay: 0.8s !important; }
+        .stagger-4 { animation-delay: 0.95s !important; }
+        .stagger-5 { animation-delay: 1.1s !important; }
+        .stagger-6 { animation-delay: 1.25s !important; }
+
+        /* ============================================================
+           CANVAS WRAPS (full-slide backgrounds)
+           ============================================================ */
+        .canvas-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .canvas-bg canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* ============================================================
+           INLINE CANVAS (boxed diagrams)
+           ============================================================ */
+        .canvas-box {
+            width: 100%;
+            max-width: 900px;
+            height: 340px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .canvas-box canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 2px 12px rgba(45,42,38,0.06);
+        }
+
+        /* ============================================================
+           CARD STYLES
+           ============================================================ */
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 28px 24px;
+            box-shadow: 0 2px 12px rgba(45,42,38,0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 32px rgba(45,42,38,0.1);
+        }
+
+        /* ============================================================
+           HERO BADGE & GRADIENT TEXT
+           ============================================================ */
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #b45309;
+            margin-bottom: 20px;
+        }
+        .hero-badge img { height: 20px; width: 20px; }
+        .hero-gradient-text {
+            background: linear-gradient(135deg, #f59e0b 0%, #f5736c 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-stat-row {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 36px;
+            flex-wrap: wrap;
+        }
+        .hero-stat-item {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        .slide.active .hero-stat-item {
+            animation: scaleIn 0.5s ease forwards;
+        }
+        .hero-stat-value {
+            font-family: 'Red Hat Display', sans-serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 900;
+            line-height: 1;
+        }
+        .hero-stat-label {
+            font-size: 0.85rem;
+            color: #6b6560;
+            margin-top: 4px;
+        }
+
+        /* ============================================================
+           PROBLEM VISUAL (SLIDE 2)
+           ============================================================ */
+        .problem-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        .gpu-box {
+            width: 260px;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .gpu-box.struggling {
+            background: linear-gradient(135deg, rgba(245,115,108,0.08), rgba(245,115,108,0.03));
+            border: 2px solid rgba(245,115,108,0.3);
+        }
+        .gpu-box-label {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+        .gpu-bar-track {
+            height: 24px;
+            background: rgba(45,42,38,0.06);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .gpu-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            position: absolute;
+            left: 0; top: 0;
+        }
+        .gpu-bar-fill.prefill-phase {
+            background: linear-gradient(90deg, #f5736c, #f59e0b);
+            animation: prefillWobble 3s ease-in-out infinite;
+        }
+        .gpu-bar-fill.decode-phase {
+            background: linear-gradient(90deg, #10b981, #34d399);
+            animation: decodeWobble 3s ease-in-out infinite 1.5s;
+        }
+        @keyframes prefillWobble {
+            0%, 100% { width: 90%; }
+            30% { width: 95%; }
+            50% { width: 20%; }
+            70% { width: 15%; }
+        }
+        @keyframes decodeWobble {
+            0%, 100% { width: 15%; }
+            30% { width: 20%; }
+            50% { width: 85%; }
+            70% { width: 90%; }
+        }
+        .contention-label {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(245,115,108,0.12);
+            color: #dc2626;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            margin-top: 8px;
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+        .problem-text-block {
+            max-width: 340px;
+            text-align: left;
+        }
+        .problem-text-block h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #f5736c;
+        }
+        .problem-text-block ul {
+            list-style: none;
+            padding: 0;
+        }
+        .problem-text-block li {
+            font-size: 0.95rem;
+            color: #6b6560;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .problem-text-block li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f5736c;
+        }
+
+        /* ============================================================
+           SOLUTION FLOW (SLIDE 3)
+           ============================================================ */
+        .solution-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .sol-node {
+            border-radius: 14px;
+            padding: 20px 24px;
+            text-align: center;
+            min-width: 160px;
+            opacity: 0;
+        }
+        .slide.active .sol-node {
+            animation: scaleIn 0.5s ease forwards;
+        }
+        .sol-node.prefill {
+            background: rgba(59,130,246,0.08);
+            border: 2px solid rgba(59,130,246,0.25);
+        }
+        .sol-node.transfer {
+            background: rgba(124,58,237,0.08);
+            border: 2px solid rgba(124,58,237,0.25);
+        }
+        .sol-node.decode {
+            background: rgba(16,185,129,0.08);
+            border: 2px solid rgba(16,185,129,0.25);
+        }
+        .sol-node-title {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .sol-node-desc {
+            font-size: 0.8rem;
+            color: #6b6560;
+        }
+        .sol-arrow {
+            font-size: 1.5rem;
+            color: #d4cfc9;
+            opacity: 0;
+        }
+        .slide.active .sol-arrow {
+            animation: fadeIn 0.3s ease forwards;
+        }
+        .sol-arrow.a1 { animation-delay: 0.7s !important; }
+        .sol-arrow.a2 { animation-delay: 0.9s !important; }
+        .sol-arrow.a3 { animation-delay: 1.1s !important; }
+        .solution-benefits {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 32px;
+            flex-wrap: wrap;
+        }
+        .sol-benefit {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px 24px;
+            box-shadow: 0 2px 12px rgba(45,42,38,0.06);
+            text-align: center;
+            min-width: 180px;
+            opacity: 0;
+        }
+        .slide.active .sol-benefit {
+            animation: fadeSlideUp 0.5s ease forwards;
+        }
+        .sol-benefit-val {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem;
+        }
+        .sol-benefit-label {
+            font-size: 0.8rem;
+            color: #6b6560;
+        }
+
+        /* ============================================================
+           ROUTE DETAILS (SLIDE 4)
+           ============================================================ */
+        .route-details {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .route-detail-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 14px 20px;
+            box-shadow: 0 2px 12px rgba(45,42,38,0.06);
+            text-align: left;
+            min-width: 200px;
+            max-width: 260px;
+            opacity: 0;
+        }
+        .slide.active .route-detail-card {
+            animation: fadeSlideUp 0.5s ease forwards;
+        }
+        .route-detail-title {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .route-detail-desc {
+            font-size: 0.78rem;
+            color: #6b6560;
+            line-height: 1.5;
+        }
+
+        /* ============================================================
+           PERFORMANCE STATS (SLIDE 5)
+           ============================================================ */
+        .perf-canvas-wrap {
+            width: 100%;
+            max-width: 800px;
+            height: 300px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .perf-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 2px 12px rgba(45,42,38,0.06);
+        }
+        .perf-stat-row {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .perf-stat-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px 24px;
+            box-shadow: 0 2px 12px rgba(45,42,38,0.06);
+            text-align: center;
+            min-width: 160px;
+            opacity: 0;
+        }
+        .slide.active .perf-stat-card {
+            animation: scaleIn 0.5s ease forwards;
+        }
+        .perf-stat-val {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 900;
+            font-size: 1.6rem;
+        }
+        .perf-stat-label {
+            font-size: 0.78rem;
+            color: #6b6560;
+            margin-top: 2px;
+        }
+
+        /* ============================================================
+           ARCHITECTURE (SLIDE 6)
+           ============================================================ */
+        .arch-canvas-wrap {
+            width: 100%;
+            max-width: 950px;
+            height: 360px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .arch-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 2px 12px rgba(45,42,38,0.06);
+        }
+        .arch-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .arch-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            color: #6b6560;
+        }
+        .arch-legend-swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* ============================================================
+           DEPLOY (SLIDE 7)
+           ============================================================ */
+        .deploy-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .deploy-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: transform 0.25s, box-shadow 0.25s;
+            cursor: pointer;
+            border: none;
+        }
+        .deploy-link-btn:hover { transform: translateY(-2px); }
+        .deploy-link-btn.primary {
+            background: linear-gradient(135deg, #f59e0b, #f5736c);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(245,158,11,0.3);
+        }
+        .deploy-link-btn.primary:hover { box-shadow: 0 8px 28px rgba(245,158,11,0.4); }
+        .deploy-link-btn.secondary {
+            background: #fff;
+            color: #3b82f6;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.1);
+        }
+        .deploy-link-btn.secondary:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.15); }
+
+        .slide-footer {
+            margin-top: 24px;
+            font-size: 0.82rem;
+            color: #a09a94;
+        }
+        .slide-footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .slide-footer a:hover { text-decoration: underline; }
+
+        /* ============================================================
+           SCALE TABLE (SLIDE 7)
+           ============================================================ */
+        .scale-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            text-align: left;
+        }
+        .scale-table th {
+            font-family: 'Red Hat Display', sans-serif;
+            font-weight: 700;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #a09a94;
+            padding: 10px 16px;
+            border-bottom: 2px solid rgba(45,42,38,0.08);
+        }
+        .scale-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(45,42,38,0.06);
+            font-weight: 500;
+        }
+        .scale-table tr:last-child td { border-bottom: none; }
+
+        /* ============================================================
+           NAVIGATION
+           ============================================================ */
+        .nav-arrows {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            z-index: 500;
+        }
+        .nav-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #d4cfc9;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s ease;
+            color: #6b6560;
+        }
+        .nav-btn:hover {
+            border-color: #f59e0b;
+            color: #f59e0b;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(245,158,11,0.2);
+        }
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+            border-color: #d4cfc9;
+            color: #d4cfc9;
+        }
+        .nav-btn:disabled:hover {
+            box-shadow: none;
+            background: rgba(255,255,255,0.9);
+        }
+        .nav-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .nav-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid #d4cfc9;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+        .nav-dot.active {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            width: 28px;
+            border-radius: 5px;
+        }
+        .nav-dot:hover:not(.active) {
+            border-color: #f59e0b;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 768px) {
+            .slide { padding: 80px 20px 90px; }
+            .problem-visual { flex-direction: column; gap: 20px; }
+            .solution-flow { flex-direction: column; gap: 8px; }
+            .sol-arrow { transform: rotate(90deg); }
+            .hero-stat-row { gap: 16px; }
+            .perf-canvas-wrap { height: 240px; }
+            .arch-canvas-wrap { height: 280px; }
+            .canvas-box { height: 260px; }
+        }
+        @media (max-width: 480px) {
+            .nav-arrows { bottom: 16px; gap: 12px; }
+            .nav-btn { width: 40px; height: 40px; }
+        }
+    </style>
 </head>
 <body>
 
-<!-- Progress Bar -->
-<div class="progress-bar" id="progressBar" style="width: 12.5%;"></div>
+<!-- PROGRESS BAR -->
+<div class="progress-bar" id="progress-bar" style="width:12.5%"></div>
 
-<!-- Header -->
-<div class="deck-header">
-  <div class="deck-brand">
-    <img src="https://llm-d.ai/img/llm-d-icon.png" alt="llm-d">
-    <span class="deck-brand-text">llm-d</span>
-  </div>
-  <div class="deck-links">
-    <a class="deck-link" href="https://llm-d.ai" target="_blank" rel="noopener">llm-d.ai</a>
-    <a class="deck-link" href="https://markellr-redhat.github.io/llm-d-content-hub/">Content Hub</a>
-  </div>
-</div>
-
-<!-- Navigation Arrows -->
-<button class="nav-arrow nav-prev hidden" id="navPrev" onclick="goSlide(currentSlide - 1)">
-  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-</button>
-<button class="nav-arrow nav-next" id="navNext" onclick="goSlide(currentSlide + 1)">
-  <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
-</button>
-
-<!-- Navigation Dots -->
-<div class="nav-dots" id="navDots"></div>
-
-<!-- ================================================================
-     SLIDES
-     ================================================================ -->
+<!-- SLIDES VIEWPORT -->
 <div class="slides-viewport">
-<div class="slides-track" id="slidesTrack">
+    <div class="slides-track" id="slides-track">
 
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 1: Title -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide active" data-slide="0">
-  <div class="deco-circle" style="width:500px;height:500px;background:var(--amber);top:-150px;right:-100px;"></div>
-  <div class="deco-circle" style="width:350px;height:350px;background:var(--blue);bottom:-100px;left:-50px;"></div>
-  <div class="slide-inner">
-    <div class="anim-item">
-      <span class="slide-label bg-amber">Agentic AI Infrastructure</span>
-    </div>
-    <h1 class="slide-title anim-item" style="font-size:3.6rem;">
-      Your AI Agent Makes<br>
-      <span class="c-coral">7 LLM Calls</span> Per Query.<br>
-      Why Are You Paying For<br>
-      <span class="c-coral">7 Cold Starts?</span>
-    </h1>
-    <p class="slide-subtitle anim-item">
-      llm-d uses KV cache-aware routing to eliminate redundant prefills,
-      delivering up to 80% faster time-to-first-token for agentic workloads.
-    </p>
-    <div class="anim-item" style="display:flex;gap:16px;flex-wrap:wrap;">
-      <button class="cta-btn cta-primary" onclick="goSlide(1)">See How It Works</button>
-      <a class="cta-btn cta-outline" href="https://llm-d.ai" target="_blank" rel="noopener">Visit llm-d.ai</a>
-    </div>
-    <div class="anim-item" style="margin-top:40px;display:flex;gap:40px;flex-wrap:wrap;">
-      <div>
-        <div class="stat-large c-amber">80%</div>
-        <div class="stat-label">TTFT Reduction</div>
-      </div>
-      <div>
-        <div class="stat-large c-blue">7x</div>
-        <div class="stat-label">LLM Calls per Query</div>
-      </div>
-      <div>
-        <div class="stat-large c-green">85%</div>
-        <div class="stat-label">Cache Hit Rate</div>
-      </div>
-    </div>
-  </div>
-  <div class="slide-number">01</div>
-</div>
-
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 2: The Problem -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide" data-slide="1">
-  <div class="deco-circle" style="width:400px;height:400px;background:var(--coral);top:-100px;left:-100px;"></div>
-  <div class="slide-inner">
-    <div class="anim-item">
-      <span class="slide-label bg-coral">The Problem</span>
-    </div>
-    <h1 class="slide-title anim-item">Every Call Pays<br>the <span class="c-coral">Full Prefill Cost</span></h1>
-    <p class="slide-subtitle anim-item">
-      Agentic workflows invoke the LLM multiple times per user query. Each call sends the same system prompt and tool definitions -- but without smart routing, every call recomputes the KV cache from scratch.
-    </p>
-    <div class="anim-item">
-      <div class="canvas-container" style="height:280px;">
-        <canvas id="problemCanvas" style="height:280px;"></canvas>
-      </div>
-    </div>
-    <div class="anim-item" style="margin-top:24px;">
-      <div class="card-grid card-grid-4">
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-coral" id="wastedMs">1,750ms</div>
-          <div class="stat-label">Wasted Prefill</div>
-          <div class="stat-sub">6 redundant prefills per query</div>
-        </div>
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-coral">2,000</div>
-          <div class="stat-label">Prompt Tokens</div>
-          <div class="stat-sub">Reparsed every single call</div>
-        </div>
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-coral">5</div>
-          <div class="stat-label">Tool Definitions</div>
-          <div class="stat-sub">750 extra tokens each</div>
-        </div>
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-coral">350ms</div>
-          <div class="stat-label">Avg Cold TTFT</div>
-          <div class="stat-sub">Without cache routing</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="slide-number">02</div>
-</div>
-
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 3: How llm-d Solves It -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide" data-slide="2">
-  <div class="deco-circle" style="width:450px;height:450px;background:var(--green);bottom:-150px;right:-100px;"></div>
-  <div class="slide-inner">
-    <div class="anim-item">
-      <span class="slide-label bg-green">The Solution</span>
-    </div>
-    <h1 class="slide-title anim-item">KV Cache-Aware Routing<br>with <span class="c-green">EPP Scoring</span></h1>
-    <p class="slide-subtitle anim-item">
-      llm-d's Endpoint Picker Policy (EPP) hashes the system prompt prefix and routes subsequent calls to pods that already hold a warm KV cache. The result -- near-zero prefill for calls 2 through 7.
-    </p>
-    <div class="anim-item" style="margin-bottom:28px;">
-      <div class="canvas-container" style="height:200px;">
-        <canvas id="routingCanvas" style="height:200px;"></canvas>
-      </div>
-    </div>
-    <div class="anim-item">
-      <div class="card-grid card-grid-3">
-        <div class="card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <span class="tag bg-blue">1</span>
-            <strong style="font-family:var(--font-display);">Prefix Hashing</strong>
-          </div>
-          <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6;">
-            EPP hashes the system prompt + tool definitions into a prefix key (e.g., 0xa3f7c2e1). This key identifies the cacheable prefix shared across all LLM calls in a session.
-          </p>
-        </div>
-        <div class="card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <span class="tag bg-amber">2</span>
-            <strong style="font-family:var(--font-display);">Pod Scoring</strong>
-          </div>
-          <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6;">
-            Each vLLM pod receives a composite score: 60% cache match + 20% queue depth + 20% GPU load. The pod with the highest score wins the request.
-          </p>
-        </div>
-        <div class="card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <span class="tag bg-green">3</span>
-            <strong style="font-family:var(--font-display);">Warm Routing</strong>
-          </div>
-          <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6;">
-            Calls 2-7 route to the pod with a warm KV cache, skipping up to 92% of prefill computation. TTFT drops from 350ms to 55ms.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="slide-number">03</div>
-</div>
-
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 4: Agent Trace Visualization -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide" data-slide="3">
-  <div class="deco-circle" style="width:300px;height:300px;background:var(--blue);top:-80px;right:-60px;"></div>
-  <div class="slide-inner">
-    <div class="anim-item">
-      <span class="slide-label bg-blue">Live Trace</span>
-    </div>
-    <h1 class="slide-title anim-item" style="font-size:2.6rem;">Agent Execution Trace</h1>
-    <p class="slide-subtitle anim-item" style="margin-bottom:20px;">
-      Watch a 7-step agent workflow route through llm-d in real time. Green bars are cache hits, amber bars are partial matches, red bars are cold misses.
-    </p>
-    <div class="anim-item">
-      <div class="canvas-container" style="height:360px;padding:0;">
-        <canvas id="traceCanvas" style="height:360px;"></canvas>
-      </div>
-    </div>
-  </div>
-  <div class="slide-number">04</div>
-</div>
-
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 5: Side-by-Side Comparison -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide" data-slide="4">
-  <div class="deco-circle" style="width:400px;height:400px;background:var(--amber);bottom:-120px;left:-120px;"></div>
-  <div class="slide-inner">
-    <div class="anim-item">
-      <span class="slide-label bg-amber">Head to Head</span>
-    </div>
-    <h1 class="slide-title anim-item" style="font-size:2.6rem;">Random Routing vs. llm-d</h1>
-    <p class="slide-subtitle anim-item">
-      The same 7-step agent workflow -- one side routes randomly, the other uses EPP cache-aware scheduling.
-    </p>
-    <div class="anim-item">
-      <div class="comparison-pair">
-        <div class="comparison-box without">
-          <div style="font-family:var(--font-display);font-weight:900;font-size:1.1rem;margin-bottom:16px;">Without llm-d</div>
-          <div class="stat-large c-coral" id="cmpWithoutTotal">3,420ms</div>
-          <div class="stat-label">Total Execution Time</div>
-          <div style="margin-top:16px;text-align:left;" id="cmpWithoutBars"></div>
-        </div>
-        <div class="comparison-box with">
-          <div style="font-family:var(--font-display);font-weight:900;font-size:1.1rem;margin-bottom:16px;">With llm-d</div>
-          <div class="stat-large c-green" id="cmpWithTotal">1,890ms</div>
-          <div class="stat-label">Total Execution Time</div>
-          <div style="margin-top:16px;text-align:left;" id="cmpWithBars"></div>
-        </div>
-      </div>
-    </div>
-    <div class="anim-item" style="margin-top:20px;">
-      <div class="card-grid card-grid-3">
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-green">45%</div>
-          <div class="stat-label">Faster Total Execution</div>
-        </div>
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-green">84%</div>
-          <div class="stat-label">TTFT Reduction (hits)</div>
-        </div>
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-green">85%</div>
-          <div class="stat-label">Cache Hit Rate</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="slide-number">05</div>
-</div>
-
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 6: Multi-Agent + MCP -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide" data-slide="5">
-  <div class="deco-circle" style="width:380px;height:380px;background:var(--purple);top:-100px;left:-100px;"></div>
-  <div class="slide-inner">
-    <div class="anim-item">
-      <span class="slide-label bg-purple">Multi-Agent</span>
-    </div>
-    <h1 class="slide-title anim-item" style="font-size:2.6rem;">Cross-Agent Cache Sharing<br>& MCP Integration</h1>
-    <p class="slide-subtitle anim-item">
-      Agents sharing the same system prompt + tool definitions route to pods with warm KV cache. The EPP scores prefix hash matches across all active agents, enabling cross-agent cache reuse. MCP tool calls flow through llm-d for the same benefit.
-    </p>
-    <div class="anim-item">
-      <div class="two-col">
-        <div>
-          <h3 style="font-family:var(--font-display);font-weight:700;margin-bottom:16px;">8-Pod vLLM Cluster</h3>
-          <div class="canvas-container" style="height:240px;padding:0;">
-            <canvas id="multiAgentCanvas" style="height:240px;"></canvas>
-          </div>
-        </div>
-        <div>
-          <h3 style="font-family:var(--font-display);font-weight:700;margin-bottom:16px;">MCP Protocol Flow</h3>
-          <div class="flow-row" style="flex-wrap:wrap;gap:4px;justify-content:center;">
-            <div class="flow-node" style="border-color:rgba(58,123,213,0.2);"><span class="c-blue">Agent</span><div class="flow-node-sub">2,048 tok</div></div>
-            <div class="flow-arrow"><div class="flow-dot" style="background:var(--blue);"></div></div>
-            <div class="flow-node" style="border-color:rgba(124,92,191,0.2);"><span class="c-purple">MCP Client</span><div class="flow-node-sub">1,024 tok</div></div>
-            <div class="flow-arrow"><div class="flow-dot" style="background:var(--purple);"></div></div>
-            <div class="flow-node" style="border-color:rgba(124,92,191,0.2);"><span class="c-purple">MCP Server</span><div class="flow-node-sub">512 tok</div></div>
-            <div class="flow-arrow"><div class="flow-dot" style="background:var(--green);"></div></div>
-            <div class="flow-node" style="border-color:rgba(45,157,90,0.2);"><span class="c-green">llm-d EPP</span><div class="flow-node-sub">cache match</div></div>
-            <div class="flow-arrow"><div class="flow-dot" style="background:var(--green);"></div></div>
-            <div class="flow-node" style="border-color:rgba(45,157,90,0.2);"><span class="c-green">vLLM Pod</span><div class="flow-node-sub">warm KV</div></div>
-          </div>
-          <div style="margin-top:16px;">
-            <div class="card" style="padding:16px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span class="tag bg-green">SHARED</span>
-                <span style="font-family:var(--font-display);font-weight:700;font-size:0.82rem;">Prefix: 0xa3f7c2e1</span>
-              </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <span class="tag bg-blue">Code Agent</span>
-                <span class="tag bg-purple">Review Agent</span>
-              </div>
-              <p style="font-size:0.78rem;color:var(--text-light);margin-top:8px;">Same system prompt -- both agents hit warm cache on shared pods</p>
+        <!-- ============================================================
+             SLIDE 1: TITLE
+             ============================================================ -->
+        <div class="slide active" data-slide="0">
+            <div class="canvas-bg">
+                <canvas id="canvas-hero"></canvas>
             </div>
-          </div>
+            <div class="slide-inner" style="position:relative;z-index:2;">
+                <div class="slide-number">Slide 1 of 8</div>
+                <div class="hero-badge">
+                    <img src="https://llm-d.ai/img/llm-d-icon.png" alt="llm-d">
+                    llm-d Open Source Framework
+                </div>
+                <h1 class="slide-title hero-gradient-text">Your Agent Makes 7 LLM Calls.<br>Why Pay for 7 Cold Starts?</h1>
+                <p class="slide-subtitle">llm-d uses KV cache-aware routing to eliminate redundant prefills, delivering up to 80% faster time-to-first-token for agentic AI workloads.</p>
+                <div class="slide-body">
+                    <div class="hero-stat-row">
+                        <div class="hero-stat-item stagger-1">
+                            <div class="hero-stat-value" style="color:#f59e0b">80%</div>
+                            <div class="hero-stat-label">TTFT Reduction</div>
+                        </div>
+                        <div class="hero-stat-item stagger-2">
+                            <div class="hero-stat-value" style="color:#f5736c">7x</div>
+                            <div class="hero-stat-label">LLM Calls per Query</div>
+                        </div>
+                        <div class="hero-stat-item stagger-3">
+                            <div class="hero-stat-value" style="color:#3b82f6">85%</div>
+                            <div class="hero-stat-label">Cache Hit Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="slide-number">06</div>
-</div>
 
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 7: Cost Savings at Scale -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide" data-slide="6">
-  <div class="deco-circle" style="width:500px;height:500px;background:var(--green);top:-200px;right:-200px;"></div>
-  <div class="slide-inner">
-    <div class="anim-item">
-      <span class="slide-label bg-green">Scale Economics</span>
-    </div>
-    <h1 class="slide-title anim-item" style="font-size:2.6rem;">Cost Savings at Scale</h1>
-    <p class="slide-subtitle anim-item">
-      At production scale, cache-aware routing compounds into massive GPU time savings. These numbers assume 8 LLM calls per invocation, 2,300 prompt tokens, 85% cache hit rate, and a 70B model at $0.90/M tokens.
-    </p>
-    <div class="anim-item">
-      <div class="card" style="overflow:hidden;">
-        <table class="scale-table">
-          <thead>
-            <tr>
-              <th>Scale</th>
-              <th>Without llm-d</th>
-              <th>With llm-d</th>
-              <th>Monthly Savings</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="font-weight:700;">1K requests/day</td>
-              <td class="c-coral">$497/mo</td>
-              <td class="c-green">$198/mo</td>
-              <td><strong class="c-green">$299/mo</strong></td>
-            </tr>
-            <tr>
-              <td style="font-weight:700;">10K requests/day</td>
-              <td class="c-coral">$4,968/mo</td>
-              <td class="c-green">$1,987/mo</td>
-              <td><strong class="c-green">$2,981/mo</strong></td>
-            </tr>
-            <tr>
-              <td style="font-weight:700;">100K requests/day</td>
-              <td class="c-coral">$49,680/mo</td>
-              <td class="c-green">$19,872/mo</td>
-              <td><strong class="c-green">$29,808/mo</strong></td>
-            </tr>
-            <tr>
-              <td style="font-weight:700;">1M requests/day</td>
-              <td class="c-coral">$496,800/mo</td>
-              <td class="c-green">$198,720/mo</td>
-              <td><strong class="c-green">$298,080/mo</strong></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="anim-item" style="margin-top:20px;">
-      <div class="card-grid card-grid-3">
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-green">60%</div>
-          <div class="stat-label">Cost Reduction</div>
-          <div class="stat-sub">vs random routing</div>
+        <!-- ============================================================
+             SLIDE 2: THE PROBLEM
+             ============================================================ -->
+        <div class="slide" data-slide="1">
+            <div class="canvas-bg">
+                <canvas id="canvas-problem"></canvas>
+            </div>
+            <div class="slide-inner">
+                <div class="slide-number">Slide 2 of 8</div>
+                <h2 class="slide-title">Every Call Pays the Full <span style="color:#f5736c">Prefill Cost</span></h2>
+                <p class="slide-subtitle">Agentic workflows invoke the LLM multiple times per query. Without smart routing, every call recomputes the KV cache from scratch, wasting GPU time on identical system prompts.</p>
+                <div class="slide-body">
+                    <div class="problem-visual">
+                        <div class="gpu-box struggling" style="opacity:0;">
+                            <div class="gpu-box-label">7-Call Agent Workflow</div>
+                            <div style="font-size:0.78rem;color:#6b6560;margin-bottom:10px;">Prefill Compute (Redundant)</div>
+                            <div class="gpu-bar-track">
+                                <div class="gpu-bar-fill prefill-phase"></div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#a09a94;">
+                                <span>System Prompt</span>
+                                <span>Tool Defs</span>
+                            </div>
+                            <div style="font-size:0.78rem;color:#6b6560;margin-top:12px;margin-bottom:10px;">Cache Utilization</div>
+                            <div class="gpu-bar-track">
+                                <div class="gpu-bar-fill decode-phase"></div>
+                            </div>
+                            <div class="contention-label">1,750ms Wasted Prefill</div>
+                        </div>
+                        <div class="problem-text-block" style="opacity:0;">
+                            <h3>Why This Hurts</h3>
+                            <ul>
+                                <li>2,000 prompt tokens reparsed every call</li>
+                                <li>350ms cold TTFT on each of 7 calls</li>
+                                <li>750 extra tokens per tool definition</li>
+                                <li>GPU compute wasted on identical prefills</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-amber">92%</div>
-          <div class="stat-label">Prefill Tokens Saved</div>
-          <div class="stat-sub">on cache hits</div>
-        </div>
-        <div class="card" style="text-align:center;">
-          <div class="stat-large c-blue">CNCF</div>
-          <div class="stat-label">Sandbox Project</div>
-          <div class="stat-sub">Open source, production ready</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="slide-number">07</div>
-</div>
 
-<!-- ────────────────────────────────────────────────────────────── -->
-<!-- SLIDE 8: Get Started -->
-<!-- ────────────────────────────────────────────────────────────── -->
-<div class="slide" data-slide="7">
-  <div class="deco-circle" style="width:600px;height:600px;background:var(--amber);top:-200px;left:-200px;"></div>
-  <div class="deco-circle" style="width:400px;height:400px;background:var(--blue);bottom:-150px;right:-100px;"></div>
-  <div class="slide-inner" style="text-align:center;">
-    <div class="anim-item">
-      <span class="slide-label bg-amber">Get Started</span>
-    </div>
-    <h1 class="slide-title anim-item" style="font-size:3.2rem;">
-      Stop Paying for<br><span class="c-coral">Cold Prefills</span>
-    </h1>
-    <p class="slide-subtitle anim-item" style="margin:0 auto 40px auto;text-align:center;max-width:600px;">
-      llm-d is open source, Kubernetes-native, and ready for production. Route your agentic AI workloads through cache-aware scheduling today.
-    </p>
-    <div class="anim-item" style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:40px;">
-      <a class="cta-btn cta-primary" href="https://llm-d.ai" target="_blank" rel="noopener" style="font-size:1.1rem;padding:16px 40px;">Explore llm-d</a>
-      <a class="cta-btn cta-outline" href="https://markellr-redhat.github.io/llm-d-content-hub/" style="font-size:1.1rem;padding:16px 40px;">Content Hub</a>
-    </div>
-    <div class="anim-item">
-      <div class="card-grid card-grid-3" style="max-width:800px;margin:0 auto;">
-        <div class="card" style="text-align:center;">
-          <div style="font-size:2rem;margin-bottom:8px;">&#9733;</div>
-          <strong style="font-family:var(--font-display);">Open Source</strong>
-          <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">CNCF Sandbox project. Apache 2.0 licensed.</p>
+        <!-- ============================================================
+             SLIDE 3: THE SOLUTION
+             ============================================================ -->
+        <div class="slide" data-slide="2">
+            <div class="canvas-bg">
+                <canvas id="canvas-solution"></canvas>
+            </div>
+            <div class="slide-inner" style="position:relative;z-index:2;">
+                <div class="slide-number">Slide 3 of 8</div>
+                <h2 class="slide-title">KV Cache-Aware Routing with <span style="color:#10b981">EPP Scoring</span></h2>
+                <p class="slide-subtitle">EPP hashes the system prompt prefix and routes subsequent calls to pods that already hold a warm KV cache. Near-zero prefill for calls 2 through 7.</p>
+                <div class="slide-body">
+                    <div class="solution-flow">
+                        <div class="sol-node prefill stagger-1">
+                            <div class="sol-node-title" style="color:#3b82f6;">Prefix Hashing</div>
+                            <div class="sol-node-desc">Hash system prompt + tools<br>into prefix key 0xa3f7c2e1</div>
+                        </div>
+                        <div class="sol-arrow a1">&rarr;</div>
+                        <div class="sol-node transfer stagger-3">
+                            <div class="sol-node-title" style="color:#7c3aed;">EPP Scorer</div>
+                            <div class="sol-node-desc">60% cache + 20% queue<br>+ 20% GPU load</div>
+                        </div>
+                        <div class="sol-arrow a2">&rarr;</div>
+                        <div class="sol-node decode stagger-5">
+                            <div class="sol-node-title" style="color:#10b981;">Warm Pod</div>
+                            <div class="sol-node-desc">Route to cached pod<br>Skip 92% of prefill</div>
+                        </div>
+                    </div>
+                    <div class="solution-benefits">
+                        <div class="sol-benefit stagger-4">
+                            <div class="sol-benefit-val" style="color:#3b82f6;">350ms</div>
+                            <div class="sol-benefit-label">Cold TTFT (Before)</div>
+                        </div>
+                        <div class="sol-benefit stagger-5">
+                            <div class="sol-benefit-val" style="color:#10b981;">55ms</div>
+                            <div class="sol-benefit-label">Warm TTFT (After)</div>
+                        </div>
+                        <div class="sol-benefit stagger-6">
+                            <div class="sol-benefit-val" style="color:#f59e0b;">84%</div>
+                            <div class="sol-benefit-label">TTFT Reduction</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card" style="text-align:center;">
-          <div style="font-size:2rem;margin-bottom:8px;">&#9881;</div>
-          <strong style="font-family:var(--font-display);">Kubernetes Native</strong>
-          <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">Deploys as a Gateway API extension. Works with any vLLM backend.</p>
-        </div>
-        <div class="card" style="text-align:center;">
-          <div style="font-size:2rem;margin-bottom:8px;">&#9889;</div>
-          <strong style="font-family:var(--font-display);">Production Ready</strong>
-          <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">Battle-tested at scale. Red Hat backed.</p>
-        </div>
-      </div>
-    </div>
-    <div class="anim-item slide-footer" style="margin-top:40px;">
-      <p>Markell Rawls &middot; AI Evangelist &middot; Red Hat</p>
-      <p style="margin-top:4px;">llm-d is a <a href="https://www.cncf.io/" target="_blank" rel="noopener">CNCF</a> Sandbox project for distributed LLM inference routing</p>
-    </div>
-  </div>
-  <div class="slide-number">08</div>
-</div>
 
-</div><!-- /slides-track -->
+        <!-- ============================================================
+             SLIDE 4: AGENT TRACE
+             ============================================================ -->
+        <div class="slide" data-slide="3">
+            <div class="canvas-bg">
+                <canvas id="canvas-trace-bg"></canvas>
+            </div>
+            <div class="slide-inner">
+                <div class="slide-number">Slide 4 of 8</div>
+                <h2 class="slide-title">Agent Execution Trace</h2>
+                <p class="slide-subtitle">Watch a 7-step agent workflow route through llm-d. Green bars are cache hits, amber bars are partial matches, red bars are cold misses.</p>
+                <div class="slide-body">
+                    <div class="canvas-box" style="height:320px;">
+                        <canvas id="canvas-trace"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SLIDE 5: PERFORMANCE
+             ============================================================ -->
+        <div class="slide" data-slide="4">
+            <div class="canvas-bg">
+                <canvas id="canvas-perf-bg"></canvas>
+            </div>
+            <div class="slide-inner">
+                <div class="slide-number">Slide 5 of 8</div>
+                <h2 class="slide-title">The Numbers Tell the Story</h2>
+                <p class="slide-subtitle">Random routing vs. EPP cache-aware routing on a 7-call agentic workflow. Benchmarked on NVIDIA H100 running Llama 3.3 70B.</p>
+                <div class="slide-body">
+                    <div class="perf-canvas-wrap">
+                        <canvas id="canvas-perf"></canvas>
+                    </div>
+                    <div class="perf-stat-row">
+                        <div class="perf-stat-card stagger-1">
+                            <div class="perf-stat-val" style="color:#f5736c;">3,420ms</div>
+                            <div class="perf-stat-label">Total Time (Random Routing)</div>
+                        </div>
+                        <div class="perf-stat-card stagger-2">
+                            <div class="perf-stat-val" style="color:#10b981;">1,890ms</div>
+                            <div class="perf-stat-label">Total Time (llm-d EPP)</div>
+                        </div>
+                        <div class="perf-stat-card stagger-3">
+                            <div class="perf-stat-val" style="color:#3b82f6;">45%</div>
+                            <div class="perf-stat-label">Faster Execution</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SLIDE 6: MULTI-AGENT + MCP
+             ============================================================ -->
+        <div class="slide" data-slide="5">
+            <div class="canvas-bg">
+                <canvas id="canvas-multi-bg"></canvas>
+            </div>
+            <div class="slide-inner">
+                <div class="slide-number">Slide 6 of 8</div>
+                <h2 class="slide-title">Cross-Agent Cache Sharing</h2>
+                <p class="slide-subtitle">Agents sharing the same system prompt route to pods with warm KV cache. EPP scores prefix hash matches across all active agents, enabling cross-agent cache reuse.</p>
+                <div class="slide-body">
+                    <div class="canvas-box" style="height:340px;">
+                        <canvas id="canvas-multi"></canvas>
+                    </div>
+                    <div class="arch-legend" style="margin-top:16px;">
+                        <div class="arch-legend-item">
+                            <div class="arch-legend-swatch" style="background:#3b82f6;"></div>
+                            Research Agent
+                        </div>
+                        <div class="arch-legend-item">
+                            <div class="arch-legend-swatch" style="background:#10b981;"></div>
+                            Code Agent
+                        </div>
+                        <div class="arch-legend-item">
+                            <div class="arch-legend-swatch" style="background:#7c3aed;"></div>
+                            Review Agent (MCP)
+                        </div>
+                        <div class="arch-legend-item">
+                            <div class="arch-legend-swatch" style="background:#f59e0b;"></div>
+                            EPP Router
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SLIDE 7: COST SAVINGS AT SCALE
+             ============================================================ -->
+        <div class="slide" data-slide="6">
+            <div class="canvas-bg">
+                <canvas id="canvas-cost-bg"></canvas>
+            </div>
+            <div class="slide-inner">
+                <div class="slide-number">Slide 7 of 8</div>
+                <h2 class="slide-title">Cost Savings at Scale</h2>
+                <p class="slide-subtitle">At production scale, cache-aware routing compounds into massive GPU time savings. Assumes 8 LLM calls per invocation, 2,300 prompt tokens, 85% cache hit rate, 70B model at $0.90/M tokens.</p>
+                <div class="slide-body">
+                    <div class="card" style="max-width:800px;margin:0 auto;overflow:hidden;">
+                        <table class="scale-table">
+                            <thead>
+                                <tr>
+                                    <th>Scale</th>
+                                    <th>Without llm-d</th>
+                                    <th>With llm-d</th>
+                                    <th>Monthly Savings</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight:700;">1K requests/day</td>
+                                    <td style="color:#f5736c;">$497/mo</td>
+                                    <td style="color:#10b981;">$198/mo</td>
+                                    <td><strong style="color:#10b981;">$299/mo</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:700;">10K requests/day</td>
+                                    <td style="color:#f5736c;">$4,968/mo</td>
+                                    <td style="color:#10b981;">$1,987/mo</td>
+                                    <td><strong style="color:#10b981;">$2,981/mo</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:700;">100K requests/day</td>
+                                    <td style="color:#f5736c;">$49,680/mo</td>
+                                    <td style="color:#10b981;">$19,872/mo</td>
+                                    <td><strong style="color:#10b981;">$29,808/mo</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:700;">1M requests/day</td>
+                                    <td style="color:#f5736c;">$496,800/mo</td>
+                                    <td style="color:#10b981;">$198,720/mo</td>
+                                    <td><strong style="color:#10b981;">$298,080/mo</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="perf-stat-row" style="margin-top:20px;">
+                        <div class="perf-stat-card stagger-1">
+                            <div class="perf-stat-val" style="color:#10b981;">60%</div>
+                            <div class="perf-stat-label">Cost Reduction</div>
+                        </div>
+                        <div class="perf-stat-card stagger-2">
+                            <div class="perf-stat-val" style="color:#f59e0b;">92%</div>
+                            <div class="perf-stat-label">Prefill Tokens Saved</div>
+                        </div>
+                        <div class="perf-stat-card stagger-3">
+                            <div class="perf-stat-val" style="color:#3b82f6;">CNCF</div>
+                            <div class="perf-stat-label">Sandbox Project</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SLIDE 8: GET STARTED
+             ============================================================ -->
+        <div class="slide" data-slide="7">
+            <div class="canvas-bg">
+                <canvas id="canvas-cta"></canvas>
+            </div>
+            <div class="slide-inner" style="position:relative;z-index:2;">
+                <div class="slide-number">Slide 8 of 8</div>
+                <h2 class="slide-title hero-gradient-text">Stop Paying for Cold Prefills</h2>
+                <p class="slide-subtitle">llm-d is open source, Kubernetes-native, and ready for production. Route your agentic AI workloads through cache-aware scheduling today.</p>
+                <div class="slide-body">
+                    <div class="deploy-links" style="opacity:0;">
+                        <a href="https://llm-d.ai" target="_blank" class="deploy-link-btn primary">Explore llm-d</a>
+                        <a href="https://github.com/llm-d" target="_blank" class="deploy-link-btn secondary">View on GitHub</a>
+                        <a href="https://markellr-redhat.github.io/llm-d-content-hub/" target="_blank" class="deploy-link-btn secondary">Content Hub</a>
+                    </div>
+                    <div class="solution-benefits" style="margin-top:32px;">
+                        <div class="sol-benefit stagger-1">
+                            <div class="sol-benefit-val" style="color:#f59e0b;">Open Source</div>
+                            <div class="sol-benefit-label">CNCF Sandbox, Apache 2.0</div>
+                        </div>
+                        <div class="sol-benefit stagger-2">
+                            <div class="sol-benefit-val" style="color:#3b82f6;">K8s Native</div>
+                            <div class="sol-benefit-label">Gateway API Extension</div>
+                        </div>
+                        <div class="sol-benefit stagger-3">
+                            <div class="sol-benefit-val" style="color:#10b981;">Production</div>
+                            <div class="sol-benefit-label">Battle-tested at Scale</div>
+                        </div>
+                    </div>
+                    <div class="slide-footer" style="opacity:0;margin-top:32px;">
+                        Markell Rawls | AI Evangelist, Red Hat<br>
+                        llm-d is a CNCF Sandbox project for distributed LLM inference routing.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /slides-track -->
 </div><!-- /slides-viewport -->
 
+<!-- NAVIGATION -->
+<div class="nav-arrows">
+    <button class="nav-btn" id="nav-prev" disabled>
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <div class="nav-dots" id="nav-dots"></div>
+    <button class="nav-btn" id="nav-next">
+        <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"></polyline></svg>
+    </button>
+</div>
+
+<!-- ====================================================================
+     ALL JAVASCRIPT
+     ==================================================================== -->
 <script>
-// ================================================================
-// SLIDE DECK ENGINE
-// ================================================================
+(function(){
+"use strict";
 
-const TOTAL_SLIDES = 8;
-let currentSlide = 0;
-let isTransitioning = false;
+/* ============================================================
+   CORE SLIDE NAVIGATION
+   ============================================================ */
+var track = document.getElementById('slides-track');
+var slides = Array.from(document.querySelectorAll('.slide'));
+var totalSlides = slides.length;
+var currentSlide = 0;
 
-// Build navigation dots
-(function buildDots() {
-  const dotsContainer = document.getElementById('navDots');
-  for (let i = 0; i < TOTAL_SLIDES; i++) {
-    const dot = document.createElement('button');
+var prevBtn = document.getElementById('nav-prev');
+var nextBtn = document.getElementById('nav-next');
+var progressBar = document.getElementById('progress-bar');
+var dotsContainer = document.getElementById('nav-dots');
+
+slides.forEach(function(_, i){
+    var dot = document.createElement('button');
     dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
-    dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
-    dot.addEventListener('click', function() { goSlide(i); });
+    dot.addEventListener('click', function(){ goToSlide(i); });
     dotsContainer.appendChild(dot);
-  }
+});
+var dots = Array.from(dotsContainer.querySelectorAll('.nav-dot'));
+
+function goToSlide(idx){
+    if(idx < 0 || idx >= totalSlides) return;
+    slides[currentSlide].classList.remove('active');
+    currentSlide = idx;
+    track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+    slides[currentSlide].classList.add('active');
+    dots.forEach(function(d, i){ d.classList.toggle('active', i === currentSlide); });
+    progressBar.style.width = ((currentSlide + 1) / totalSlides * 100) + '%';
+    prevBtn.disabled = currentSlide === 0;
+    nextBtn.disabled = currentSlide === totalSlides - 1;
+    triggerSlideAnimation(currentSlide);
+}
+
+prevBtn.addEventListener('click', function(){ goToSlide(currentSlide - 1); });
+nextBtn.addEventListener('click', function(){ goToSlide(currentSlide + 1); });
+
+document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); goToSlide(currentSlide + 1); }
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goToSlide(currentSlide - 1); }
+});
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+var dpr = window.devicePixelRatio || 1;
+function sizeCanvas(canvas, w, h){
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return ctx;
+}
+function lerp(a,b,t){ return a + (b-a)*t; }
+function easeOutCubic(t){ return 1 - Math.pow(1-t, 3); }
+
+var _rafIds = [];
+function safeRAF(fn){
+    var id = requestAnimationFrame(fn);
+    _rafIds.push(id);
+    return id;
+}
+document.addEventListener('visibilitychange', function(){
+    if(document.hidden){ while(_rafIds.length) cancelAnimationFrame(_rafIds.pop()); }
+});
+
+function roundRect(ctx, x, y, w, h, r, fillColor, strokeColor){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    if(fillColor){ ctx.fillStyle = fillColor; ctx.fill(); }
+    if(strokeColor){ ctx.strokeStyle = strokeColor; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+/* ============================================================
+   TRIGGER ANIMATIONS PER SLIDE
+   ============================================================ */
+function triggerSlideAnimation(idx){
+    if(idx === 1){
+        var gpuBox = slides[1].querySelector('.gpu-box');
+        var textBlock = slides[1].querySelector('.problem-text-block');
+        if(gpuBox) { gpuBox.style.opacity = '0'; gpuBox.style.animation = 'slideInLeft 0.6s 0.5s ease forwards'; }
+        if(textBlock) { textBlock.style.opacity = '0'; textBlock.style.animation = 'slideInRight 0.6s 0.7s ease forwards'; }
+    }
+    if(idx === 4){
+        perfAnimProgress = 0;
+    }
+    if(idx === 3){
+        traceAnimProgress = 0;
+    }
+    if(idx === 7){
+        var links = slides[7].querySelector('.deploy-links');
+        var footer = slides[7].querySelector('.slide-footer');
+        if(links) { links.style.opacity = '0'; links.style.animation = 'fadeSlideUp 0.5s 1.3s ease forwards'; }
+        if(footer) { footer.style.opacity = '0'; footer.style.animation = 'fadeSlideUp 0.5s 1.5s ease forwards'; }
+    }
+}
+
+/* ============================================================
+   SLIDE 1: HERO CANVAS -- Floating particle network
+   ============================================================ */
+(function heroCanvas(){
+    var canvas = document.getElementById('canvas-hero');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var particles = [];
+    var particleCount = 65;
+    var colorPalette = ['rgba(245,158,11,','rgba(245,115,108,','rgba(59,130,246,','rgba(16,185,129,','rgba(124,58,237,'];
+    for(var i = 0; i < particleCount; i++){
+        particles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 2 + Math.random() * 5,
+            speedX: (Math.random() - 0.5) * 0.18,
+            speedY: (Math.random() - 0.5) * 0.14,
+            color: colorPalette[Math.floor(Math.random()*colorPalette.length)],
+            alpha: 0.12 + Math.random() * 0.25,
+            pulse: Math.random() * Math.PI * 2
+        });
+    }
+
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+
+        // Update and draw particles
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.pulse += 0.008;
+            if(p.x < -20) p.x = W + 20;
+            if(p.x > W + 20) p.x = -20;
+            if(p.y < -20) p.y = H + 20;
+            if(p.y > H + 20) p.y = -20;
+
+            var pulseFactor = 1 + Math.sin(p.pulse) * 0.3;
+
+            // Outer glow
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 4 * pulseFactor, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.15) + ')';
+            ctx.fill();
+
+            // Mid glow
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 2 * pulseFactor, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.35) + ')';
+            ctx.fill();
+
+            // Core particle
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+        }
+
+        // Connection lines between nearby particles
+        for(var i = 0; i < particles.length; i++){
+            for(var j = i+1; j < particles.length; j++){
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 180){
+                    var lineAlpha = 0.18 * (1 - dist/180);
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(212,207,201,' + lineAlpha + ')';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
 })();
 
-function goSlide(index) {
-  if (isTransitioning) return;
-  if (index < 0 || index >= TOTAL_SLIDES) return;
-  if (index === currentSlide) return;
+/* ============================================================
+   SLIDE 2: PROBLEM CANVAS -- Drifting red/amber warning particles
+   ============================================================ */
+(function problemCanvas(){
+    var canvas = document.getElementById('canvas-problem');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
 
-  isTransitioning = true;
-  currentSlide = index;
+    var particles = [];
+    for(var i = 0; i < 45; i++){
+        particles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 1.5 + Math.random() * 4,
+            speedX: (Math.random() - 0.5) * 0.12,
+            speedY: -0.05 - Math.random() * 0.15,
+            color: Math.random() > 0.5 ? 'rgba(245,115,108,' : 'rgba(245,158,11,',
+            alpha: 0.08 + Math.random() * 0.18,
+            life: Math.random() * 200
+        });
+    }
 
-  // Move track
-  var track = document.getElementById('slidesTrack');
-  track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.life++;
+            if(p.y < -20 || p.life > 300){
+                p.x = Math.random() * W;
+                p.y = H + 20;
+                p.life = 0;
+            }
+            if(p.x < -20) p.x = W + 20;
+            if(p.x > W + 20) p.x = -20;
 
-  // Update active class on slides
-  var slides = document.querySelectorAll('.slide');
-  slides.forEach(function(s, i) {
-    s.classList.toggle('active', i === currentSlide);
-  });
+            var fadeAlpha = p.alpha * Math.min(1, (300 - p.life)/100);
 
-  // Update dots
-  var dots = document.querySelectorAll('.nav-dot');
-  dots.forEach(function(d, i) {
-    d.classList.toggle('active', i === currentSlide);
-  });
+            // Glow
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (fadeAlpha * 0.2) + ')';
+            ctx.fill();
 
-  // Update arrows
-  document.getElementById('navPrev').classList.toggle('hidden', currentSlide === 0);
-  document.getElementById('navNext').classList.toggle('hidden', currentSlide === TOTAL_SLIDES - 1);
-
-  // Update progress bar
-  var progress = ((currentSlide + 1) / TOTAL_SLIDES) * 100;
-  document.getElementById('progressBar').style.width = progress + '%';
-
-  // Trigger slide-specific animations
-  setTimeout(function() {
-    triggerSlideAnimations(currentSlide);
-  }, 300);
-
-  setTimeout(function() {
-    isTransitioning = false;
-  }, 750);
-}
-
-// Keyboard navigation
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-    e.preventDefault();
-    goSlide(currentSlide + 1);
-  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-    e.preventDefault();
-    goSlide(currentSlide - 1);
-  } else if (e.key === 'Home') {
-    e.preventDefault();
-    goSlide(0);
-  } else if (e.key === 'End') {
-    e.preventDefault();
-    goSlide(TOTAL_SLIDES - 1);
-  }
-});
-
-// ================================================================
-// CANVAS ANIMATIONS
-// ================================================================
-
-// Utility
-function randRange(min, max) { return min + Math.random() * (max - min); }
-function randInt(min, max) { return Math.floor(randRange(min, max + 1)); }
-
-// High-DPI canvas helper
-function setupCanvas(canvasId) {
-  var canvas = document.getElementById(canvasId);
-  if (!canvas) return null;
-  var container = canvas.parentElement;
-  var dpr = window.devicePixelRatio || 1;
-  var rect = container.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  var ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  return { canvas: canvas, ctx: ctx, w: rect.width, h: rect.height };
-}
-
-// ── SLIDE 2: Problem Canvas -- Cold Prefill Bars ────────────────
-
-var problemAnimFrame = null;
-var problemAnimProgress = 0;
-
-function animateProblemCanvas() {
-  var setup = setupCanvas('problemCanvas');
-  if (!setup) return;
-  var ctx = setup.ctx, w = setup.w, h = setup.h;
-  problemAnimProgress = 0;
-
-  var steps = [
-    { label: 'Parse Query', ms: 350, type: 'miss' },
-    { label: 'Reasoning', ms: 380, type: 'miss' },
-    { label: 'Tool Select', ms: 320, type: 'miss' },
-    { label: 'web_search()', ms: 450, type: 'tool' },
-    { label: 'Analyze', ms: 340, type: 'miss' },
-    { label: 'code_exec()', ms: 380, type: 'tool' },
-    { label: 'Response', ms: 360, type: 'miss' }
-  ];
-
-  var barHeight = 28;
-  var barGap = 8;
-  var labelWidth = 120;
-  var chartLeft = labelWidth + 10;
-  var chartWidth = w - chartLeft - 80;
-  var maxMs = 500;
-  var startY = 30;
-
-  function draw(progress) {
-    ctx.clearRect(0, 0, w, h);
-
-    // Title
-    ctx.font = '700 13px "Red Hat Display", sans-serif';
-    ctx.fillStyle = '#6b6560';
-    ctx.fillText('Without KV Cache Routing -- Every Call is Cold', chartLeft, 18);
-
-    steps.forEach(function(step, i) {
-      var y = startY + i * (barHeight + barGap);
-      var targetWidth = (step.ms / maxMs) * chartWidth;
-      var currentWidth = targetWidth * Math.min(1, Math.max(0, (progress - i * 0.1) / 0.6));
-
-      // Label
-      ctx.font = '500 12px "Red Hat Text", sans-serif';
-      ctx.fillStyle = '#6b6560';
-      ctx.textAlign = 'right';
-      ctx.fillText(step.label, labelWidth, y + barHeight / 2 + 4);
-      ctx.textAlign = 'left';
-
-      // Track
-      ctx.fillStyle = 'rgba(45,42,38,0.04)';
-      roundRect(ctx, chartLeft, y, chartWidth, barHeight, 6);
-      ctx.fill();
-
-      // Bar
-      if (currentWidth > 2) {
-        ctx.fillStyle = step.type === 'tool' ? '#7c5cbf' : '#e06050';
-        roundRect(ctx, chartLeft, y, currentWidth, barHeight, 6);
-        ctx.fill();
-
-        // Duration text
-        if (currentWidth > 50) {
-          ctx.font = '700 11px "Red Hat Display", sans-serif';
-          ctx.fillStyle = 'white';
-          ctx.fillText(step.ms + 'ms', chartLeft + 10, y + barHeight / 2 + 4);
+            // Core
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fillStyle = p.color + fadeAlpha + ')';
+            ctx.fill();
         }
-      }
 
-      // Tag
-      if (progress > i * 0.1 + 0.3) {
-        var tagX = chartLeft + currentWidth + 8;
-        var tagText = step.type === 'tool' ? 'TOOL' : 'COLD';
-        var tagColor = step.type === 'tool' ? '#7c5cbf' : '#e06050';
-        ctx.font = '700 9px "Red Hat Display", sans-serif';
-        ctx.fillStyle = tagColor;
-        ctx.fillText(tagText, tagX, y + barHeight / 2 + 4);
-      }
-    });
-  }
+        // Connection lines
+        for(var i = 0; i < particles.length; i++){
+            for(var j = i+1; j < particles.length; j++){
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 120){
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(245,115,108,' + (0.1 * (1 - dist/120)) + ')';
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+            }
+        }
 
-  function animate() {
-    problemAnimProgress += 0.012;
-    draw(problemAnimProgress);
-    if (problemAnimProgress < 2) {
-      problemAnimFrame = requestAnimationFrame(animate);
+        if(!document.hidden) safeRAF(draw);
     }
-  }
+    safeRAF(draw);
+})();
 
-  if (problemAnimFrame) cancelAnimationFrame(problemAnimFrame);
-  animate();
-}
+/* ============================================================
+   SLIDE 3: SOLUTION CANVAS -- Flowing particles left to right
+   ============================================================ */
+(function solCanvas(){
+    var canvas = document.getElementById('canvas-solution');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
 
-
-// ── SLIDE 3: Routing Canvas -- EPP Flow ─────────────────────────
-
-var routingAnimFrame = null;
-var routingAnimTime = 0;
-
-function animateRoutingCanvas() {
-  var setup = setupCanvas('routingCanvas');
-  if (!setup) return;
-  var ctx = setup.ctx, w = setup.w, h = setup.h;
-  routingAnimTime = 0;
-
-  var podCount = 8;
-  var podWidth = 70;
-  var podHeight = 40;
-  var podGap = 12;
-  var podsTotal = podCount * (podWidth + podGap) - podGap;
-  var podsStartX = (w - podsTotal) / 2;
-  var podsY = h - 70;
-
-  // EPP box
-  var eppX = w / 2 - 60;
-  var eppY = h / 2 - 20;
-  var eppW = 120;
-  var eppH = 40;
-
-  // Agent box
-  var agentX = w / 2 - 50;
-  var agentY = 20;
-  var agentW = 100;
-  var agentH = 36;
-
-  // Particles
-  var particles = [];
-  var targetPod = 2; // The cached pod
-
-  function draw(time) {
-    ctx.clearRect(0, 0, w, h);
-
-    // Agent box
-    ctx.fillStyle = '#e3edf9';
-    roundRect(ctx, agentX, agentY, agentW, agentH, 8);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(58,123,213,0.3)';
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, agentX, agentY, agentW, agentH, 8);
-    ctx.stroke();
-    ctx.font = '700 12px "Red Hat Display", sans-serif';
-    ctx.fillStyle = '#3a7bd5';
-    ctx.textAlign = 'center';
-    ctx.fillText('Agent', agentX + agentW / 2, agentY + agentH / 2 + 4);
-
-    // Arrow from agent to EPP
-    ctx.beginPath();
-    ctx.moveTo(w / 2, agentY + agentH);
-    ctx.lineTo(w / 2, eppY);
-    ctx.strokeStyle = 'rgba(45,42,38,0.12)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // EPP box
-    ctx.fillStyle = '#fef3dc';
-    roundRect(ctx, eppX, eppY, eppW, eppH, 8);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(232,146,13,0.3)';
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, eppX, eppY, eppW, eppH, 8);
-    ctx.stroke();
-    ctx.font = '700 12px "Red Hat Display", sans-serif';
-    ctx.fillStyle = '#e8920d';
-    ctx.textAlign = 'center';
-    ctx.fillText('EPP Scorer', eppX + eppW / 2, eppY + eppH / 2 + 4);
-
-    // Lines from EPP to pods
-    for (var i = 0; i < podCount; i++) {
-      var px = podsStartX + i * (podWidth + podGap) + podWidth / 2;
-      var py = podsY;
-      ctx.beginPath();
-      ctx.moveTo(w / 2, eppY + eppH);
-      ctx.lineTo(px, py);
-      ctx.strokeStyle = i === targetPod ? 'rgba(45,157,90,0.4)' : 'rgba(45,42,38,0.06)';
-      ctx.lineWidth = i === targetPod ? 2.5 : 1;
-      ctx.stroke();
+    var flowParticles = [];
+    for(var i = 0; i < 50; i++){
+        flowParticles.push({
+            t: Math.random(),
+            speed: 0.0005 + Math.random() * 0.002,
+            size: 2 + Math.random() * 3.5,
+            lane: Math.floor(Math.random() * 5),
+            yOff: (Math.random() - 0.5) * 120,
+            phase: Math.random() * Math.PI * 2
+        });
     }
 
-    // Pods
-    for (var j = 0; j < podCount; j++) {
-      var px2 = podsStartX + j * (podWidth + podGap);
-      var isTarget = j === targetPod;
-      ctx.fillStyle = isTarget ? '#e0f5ea' : '#ffffff';
-      roundRect(ctx, px2, podsY, podWidth, podHeight, 8);
-      ctx.fill();
-      ctx.strokeStyle = isTarget ? 'rgba(45,157,90,0.5)' : 'rgba(45,42,38,0.08)';
-      ctx.lineWidth = isTarget ? 2 : 1;
-      roundRect(ctx, px2, podsY, podWidth, podHeight, 8);
-      ctx.stroke();
+    var colors = ['rgba(59,130,246,','rgba(124,58,237,','rgba(16,185,129,','rgba(245,158,11,','rgba(245,115,108,'];
 
-      ctx.font = '600 9px "Red Hat Text", sans-serif';
-      ctx.fillStyle = isTarget ? '#2d9d5a' : '#9a9490';
-      ctx.textAlign = 'center';
-      ctx.fillText('pod-' + j, px2 + podWidth / 2, podsY + 16);
-
-      if (isTarget) {
-        ctx.font = '700 8px "Red Hat Display", sans-serif';
-        ctx.fillStyle = '#2d9d5a';
-        ctx.fillText('CACHED', px2 + podWidth / 2, podsY + 30);
-
-        // Glow
-        var glowAlpha = 0.08 + Math.sin(time * 3) * 0.04;
-        ctx.fillStyle = 'rgba(45,157,90,' + glowAlpha + ')';
-        ctx.beginPath();
-        ctx.arc(px2 + podWidth / 2, podsY + podHeight / 2, 50, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    // Background ambient particles
+    var ambientParticles = [];
+    for(var i = 0; i < 20; i++){
+        ambientParticles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 1 + Math.random() * 2.5,
+            speedX: (Math.random() - 0.5) * 0.08,
+            speedY: (Math.random() - 0.5) * 0.05,
+            color: colors[Math.floor(Math.random()*colors.length)],
+            alpha: 0.06 + Math.random() * 0.1
+        });
     }
 
-    // Animated particle along the selected path
-    var cycleTime = time % 3;
-    if (cycleTime < 1.5) {
-      var t = cycleTime / 1.5;
-      var startPx = w / 2;
-      var startPy = agentY + agentH;
-      var midPx = w / 2;
-      var midPy = eppY + eppH / 2;
-      var endPx = podsStartX + targetPod * (podWidth + podGap) + podWidth / 2;
-      var endPy = podsY;
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        var centerY = H * 0.5;
 
-      var px3, py3;
-      if (t < 0.4) {
-        var t2 = t / 0.4;
-        px3 = startPx + (midPx - startPx) * t2;
-        py3 = startPy + (midPy - startPy) * t2;
-      } else {
-        var t2b = (t - 0.4) / 0.6;
-        px3 = midPx + (endPx - midPx) * t2b;
-        py3 = midPy + (endPy - midPy) * t2b;
-      }
+        // Ambient particles
+        for(var i = 0; i < ambientParticles.length; i++){
+            var ap = ambientParticles[i];
+            ap.x += ap.speedX;
+            ap.y += ap.speedY;
+            if(ap.x < -10) ap.x = W + 10;
+            if(ap.x > W + 10) ap.x = -10;
+            if(ap.y < -10) ap.y = H + 10;
+            if(ap.y > H + 10) ap.y = -10;
 
-      ctx.beginPath();
-      ctx.arc(px3, py3, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#2d9d5a';
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(px3, py3, 10, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(45,157,90,0.2)';
-      ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ap.x, ap.y, ap.size * 3, 0, Math.PI*2);
+            ctx.fillStyle = ap.color + (ap.alpha * 0.3) + ')';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ap.x, ap.y, ap.size, 0, Math.PI*2);
+            ctx.fillStyle = ap.color + ap.alpha + ')';
+            ctx.fill();
+        }
+
+        // Flow particles with trails
+        for(var i = 0; i < flowParticles.length; i++){
+            var p = flowParticles[i];
+            p.t += p.speed;
+            p.phase += 0.012;
+            if(p.t > 1) { p.t = 0; p.yOff = (Math.random() - 0.5) * 120; }
+            var x = W * 0.05 + p.t * W * 0.9;
+            var y = centerY + p.yOff + Math.sin(p.t * Math.PI * 3 + p.phase) * 25;
+            var alpha = Math.sin(p.t * Math.PI);
+
+            // Trail
+            for(var tr = 1; tr <= 5; tr++){
+                var trailT = p.t - tr * 0.008;
+                if(trailT < 0) continue;
+                var trailX = W * 0.05 + trailT * W * 0.9;
+                var trailY = centerY + p.yOff + Math.sin(trailT * Math.PI * 3 + p.phase) * 25;
+                var trailAlpha = Math.sin(trailT * Math.PI) * (1 - tr * 0.18);
+                ctx.beginPath();
+                ctx.arc(trailX, trailY, p.size * 0.6, 0, Math.PI*2);
+                ctx.fillStyle = colors[p.lane] + (trailAlpha * 0.15) + ')';
+                ctx.fill();
+            }
+
+            // Glow
+            ctx.beginPath();
+            ctx.arc(x, y, p.size * 2.5, 0, Math.PI*2);
+            ctx.fillStyle = colors[p.lane] + (alpha * 0.15) + ')';
+            ctx.fill();
+
+            // Core
+            ctx.beginPath();
+            ctx.arc(x, y, p.size, 0, Math.PI*2);
+            ctx.fillStyle = colors[p.lane] + (alpha * 0.6) + ')';
+            ctx.fill();
+        }
+
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
+})();
+
+/* ============================================================
+   SLIDE 4: TRACE BACKGROUND -- Subtle ambient particles
+   ============================================================ */
+(function traceBgCanvas(){
+    var canvas = document.getElementById('canvas-trace-bg');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var particles = [];
+    for(var i = 0; i < 35; i++){
+        particles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 1.5 + Math.random() * 3,
+            speedX: (Math.random() - 0.5) * 0.1,
+            speedY: (Math.random() - 0.5) * 0.07,
+            color: ['rgba(16,185,129,','rgba(245,158,11,','rgba(59,130,246,'][Math.floor(Math.random()*3)],
+            alpha: 0.06 + Math.random() * 0.12,
+            pulse: Math.random() * Math.PI * 2
+        });
     }
 
-    ctx.textAlign = 'left';
-  }
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.pulse += 0.007;
+            if(p.x < -10) p.x = W + 10;
+            if(p.x > W + 10) p.x = -10;
+            if(p.y < -10) p.y = H + 10;
+            if(p.y > H + 10) p.y = -10;
 
-  function animate() {
-    routingAnimTime += 0.016;
-    draw(routingAnimTime);
-    routingAnimFrame = requestAnimationFrame(animate);
-  }
+            var pf = 1 + Math.sin(p.pulse) * 0.2;
 
-  if (routingAnimFrame) cancelAnimationFrame(routingAnimFrame);
-  animate();
-}
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3 * pf, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.2) + ')';
+            ctx.fill();
 
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * pf, 0, Math.PI*2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+        }
 
-// ── SLIDE 4: Trace Canvas -- Agent Execution Waterfall ──────────
+        for(var i = 0; i < particles.length; i++){
+            for(var j = i+1; j < particles.length; j++){
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 140){
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(16,185,129,' + (0.08 * (1 - dist/140)) + ')';
+                    ctx.lineWidth = 0.7;
+                    ctx.stroke();
+                }
+            }
+        }
 
-var traceAnimFrame = null;
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
+})();
+
+/* ============================================================
+   SLIDE 4: TRACE CANVAS -- Animated agent execution waterfall
+   ============================================================ */
 var traceAnimProgress = 0;
+(function traceCanvas(){
+    var canvas = document.getElementById('canvas-trace');
+    if(!canvas) return;
+    var W, H, ctx;
 
-function animateTraceCanvas() {
-  var setup = setupCanvas('traceCanvas');
-  if (!setup) return;
-  var ctx = setup.ctx, w = setup.w, h = setup.h;
-  traceAnimProgress = 0;
-
-  var steps = [
-    { label: 'Parse User Query', service: 'inference-svc', ms: 180, cache: 'miss', ttft: 380, pod: 'pod-5', depth: 0 },
-    { label: 'Reasoning', service: 'inference-svc', ms: 320, cache: 'partial', ttft: 150, pod: 'pod-5', depth: 1 },
-    { label: 'Tool Selection', service: 'inference-svc', ms: 140, cache: 'hit', ttft: 55, pod: 'pod-5', depth: 1 },
-    { label: 'web_search()', service: 'tool-executor', ms: 450, cache: 'tool', ttft: 0, pod: '--', depth: 2 },
-    { label: 'Analyze Results', service: 'inference-svc', ms: 280, cache: 'hit', ttft: 62, pod: 'pod-5', depth: 2 },
-    { label: 'Sub-Query Gen', service: 'inference-svc', ms: 160, cache: 'hit', ttft: 48, pod: 'pod-5', depth: 1 },
-    { label: 'code_exec()', service: 'tool-executor', ms: 380, cache: 'tool', ttft: 0, pod: '--', depth: 2 },
-    { label: 'MCP: file_read()', service: 'mcp-bridge', ms: 220, cache: 'hit', ttft: 58, pod: 'pod-5', depth: 2 },
-    { label: 'Synthesize', service: 'inference-svc', ms: 400, cache: 'hit', ttft: 52, pod: 'pod-5', depth: 1 },
-    { label: 'Final Response', service: 'inference-svc', ms: 260, cache: 'hit', ttft: 45, pod: 'pod-5', depth: 0 }
-  ];
-
-  // Compute cumulative start times
-  var cumulative = 0;
-  steps.forEach(function(s) {
-    s.start = cumulative;
-    cumulative += s.ms;
-  });
-  var totalMs = cumulative;
-
-  var barHeight = 24;
-  var barGap = 6;
-  var labelWidth = 160;
-  var chartLeft = labelWidth + 10;
-  var chartWidth = w - chartLeft - 80;
-  var startY = 40;
-
-  var cacheColors = {
-    hit: '#2d9d5a',
-    partial: '#e8920d',
-    miss: '#e06050',
-    tool: '#7c5cbf'
-  };
-
-  var cacheLabels = {
-    hit: 'HIT',
-    partial: 'PARTIAL',
-    miss: 'MISS',
-    tool: 'TOOL'
-  };
-
-  function draw(progress) {
-    ctx.clearRect(0, 0, w, h);
-
-    // Header
-    ctx.font = '700 13px "Red Hat Display", sans-serif';
-    ctx.fillStyle = '#2d2a26';
-    ctx.fillText('Agent Execution Trace', chartLeft, 18);
-
-    // Ruler
-    ctx.font = '400 9px "Red Hat Text", sans-serif';
-    ctx.fillStyle = '#9a9490';
-    ctx.textAlign = 'center';
-    for (var r = 0; r <= 4; r++) {
-      var rx = chartLeft + (r / 4) * chartWidth;
-      ctx.fillText(Math.round(r / 4 * totalMs) + 'ms', rx, 32);
-      ctx.beginPath();
-      ctx.moveTo(rx, 35);
-      ctx.lineTo(rx, startY + steps.length * (barHeight + barGap));
-      ctx.strokeStyle = 'rgba(45,42,38,0.05)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    function resize(){
+        var rect = canvas.parentElement.getBoundingClientRect();
+        W = rect.width;
+        H = rect.height || 320;
+        ctx = sizeCanvas(canvas, W, H);
     }
-    ctx.textAlign = 'left';
+    resize();
+    window.addEventListener('resize', resize);
 
-    steps.forEach(function(step, i) {
-      var y = startY + i * (barHeight + barGap);
-      var stepProgress = Math.max(0, Math.min(1, (progress - i * 0.08) / 0.5));
-      if (stepProgress <= 0) return;
+    var steps = [
+        { label: 'Parse Query', ms: 350, cache: 'miss', pod: 'pod-3' },
+        { label: 'Reasoning', ms: 150, cache: 'partial', pod: 'pod-3' },
+        { label: 'Tool Selection', ms: 55, cache: 'hit', pod: 'pod-3' },
+        { label: 'web_search()', ms: 450, cache: 'tool', pod: 'external' },
+        { label: 'Analyze Results', ms: 62, cache: 'hit', pod: 'pod-3' },
+        { label: 'code_exec()', ms: 380, cache: 'tool', pod: 'external' },
+        { label: 'MCP: file_read()', ms: 58, cache: 'hit', pod: 'pod-3' },
+        { label: 'Synthesize', ms: 52, cache: 'hit', pod: 'pod-3' },
+        { label: 'Final Response', ms: 45, cache: 'hit', pod: 'pod-3' }
+    ];
 
-      var targetLeft = (step.start / totalMs) * chartWidth;
-      var targetWidth = (step.ms / totalMs) * chartWidth;
-      var currentWidth = targetWidth * stepProgress;
+    var cumulative = 0;
+    steps.forEach(function(s){ s.start = cumulative; cumulative += s.ms; });
+    var totalMs = cumulative;
 
-      // Depth indent
-      var indent = step.depth * 14;
+    var cacheColors = { hit: '#10b981', partial: '#f59e0b', miss: '#f5736c', tool: '#7c3aed' };
+    var cacheLabels = { hit: 'HIT', partial: 'PARTIAL', miss: 'MISS', tool: 'TOOL' };
 
-      // Label
-      ctx.font = '500 11px "Red Hat Text", sans-serif';
-      ctx.fillStyle = '#6b6560';
-      ctx.textAlign = 'right';
-      ctx.fillText(step.label, labelWidth - indent, y + barHeight / 2 + 4);
-      ctx.textAlign = 'left';
-
-      // Service tag
-      ctx.font = '500 8px "Red Hat Text", sans-serif';
-      ctx.fillStyle = '#9a9490';
-      ctx.fillText(step.service, chartLeft + targetLeft + currentWidth + 8, y + 10);
-
-      // Track
-      ctx.fillStyle = 'rgba(45,42,38,0.03)';
-      roundRect(ctx, chartLeft, y, chartWidth, barHeight, 5);
-      ctx.fill();
-
-      // Bar
-      var color = cacheColors[step.cache];
-      ctx.fillStyle = color;
-      roundRect(ctx, chartLeft + targetLeft, y, Math.max(2, currentWidth), barHeight, 5);
-      ctx.fill();
-
-      // Bar text
-      if (currentWidth > 60) {
-        ctx.font = '700 10px "Red Hat Display", sans-serif';
-        ctx.fillStyle = 'white';
-        ctx.fillText(step.pod + ' | ' + step.ms + 'ms', chartLeft + targetLeft + 8, y + barHeight / 2 + 3);
-      }
-
-      // Cache tag
-      if (stepProgress > 0.7) {
-        var tagText = cacheLabels[step.cache];
-        var tagX = chartLeft + targetLeft + currentWidth + 8;
-        ctx.font = '700 8px "Red Hat Display", sans-serif';
-        ctx.fillStyle = color;
-        ctx.fillText(tagText, tagX, y + barHeight - 2);
-      }
-    });
-  }
-
-  function animate() {
-    traceAnimProgress += 0.008;
-    draw(traceAnimProgress);
-    if (traceAnimProgress < 3) {
-      traceAnimFrame = requestAnimationFrame(animate);
+    // Particle sparkles along bars
+    var sparkles = [];
+    for(var i = 0; i < 25; i++){
+        sparkles.push({
+            stepIdx: Math.floor(Math.random() * steps.length),
+            offset: Math.random(),
+            size: 1.5 + Math.random() * 2,
+            alpha: 0.3 + Math.random() * 0.5,
+            speed: 0.0015 + Math.random() * 0.003
+        });
     }
-  }
 
-  if (traceAnimFrame) cancelAnimationFrame(traceAnimFrame);
-  animate();
-}
+    function draw(){
+        traceAnimProgress += 0.004;
+        resize();
+        ctx.clearRect(0,0,W,H);
 
+        var barHeight = 26;
+        var barGap = 7;
+        var labelWidth = 130;
+        var chartLeft = labelWidth + 10;
+        var chartWidth = W - chartLeft - 90;
+        var startY = 35;
 
-// ── SLIDE 6: Multi-Agent Canvas ─────────────────────────────────
+        // Title
+        ctx.font = '700 12px Red Hat Display, sans-serif';
+        ctx.fillStyle = '#2d2a26';
+        ctx.textAlign = 'left';
+        ctx.fillText('Agent Execution Trace with EPP Routing', chartLeft, 16);
 
-var multiAnimFrame = null;
-var multiAnimTime = 0;
+        // Ruler
+        ctx.font = '400 9px Red Hat Text, sans-serif';
+        ctx.fillStyle = '#a09a94';
+        ctx.textAlign = 'center';
+        for(var r = 0; r <= 4; r++){
+            var rx = chartLeft + (r/4)*chartWidth;
+            ctx.fillText(Math.round(r/4*totalMs) + 'ms', rx, 28);
+            ctx.beginPath();
+            ctx.moveTo(rx, 32);
+            ctx.lineTo(rx, startY + steps.length * (barHeight + barGap));
+            ctx.strokeStyle = 'rgba(45,42,38,0.05)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        ctx.textAlign = 'left';
 
-function animateMultiAgentCanvas() {
-  var setup = setupCanvas('multiAgentCanvas');
-  if (!setup) return;
-  var ctx = setup.ctx, w = setup.w, h = setup.h;
-  multiAnimTime = 0;
+        steps.forEach(function(step, i){
+            var y = startY + i * (barHeight + barGap);
+            var stepProgress = Math.max(0, Math.min(1, (traceAnimProgress - i * 0.08) / 0.5));
+            if(stepProgress <= 0) return;
 
-  var pods = [];
-  var podCols = 4;
-  var podRows = 2;
-  var podW = 60;
-  var podH = 50;
-  var podGapX = 16;
-  var podGapY = 14;
-  var gridW = podCols * (podW + podGapX) - podGapX;
-  var gridStartX = (w - gridW) / 2;
-  var gridStartY = 60;
+            var targetLeft = (step.start / totalMs) * chartWidth;
+            var targetWidth = (step.ms / totalMs) * chartWidth;
+            var currentWidth = targetWidth * stepProgress;
 
-  for (var row = 0; row < podRows; row++) {
-    for (var col = 0; col < podCols; col++) {
-      pods.push({
-        x: gridStartX + col * (podW + podGapX),
-        y: gridStartY + row * (podH + podGapY),
-        cache: Math.random() > 0.5 ? Math.round(randRange(60, 95)) : Math.round(randRange(10, 40)),
-        queue: randInt(0, 5),
-        active: false
-      });
+            // Label
+            ctx.font = '500 11px Red Hat Text, sans-serif';
+            ctx.fillStyle = '#6b6560';
+            ctx.textAlign = 'right';
+            ctx.fillText(step.label, labelWidth, y + barHeight/2 + 4);
+            ctx.textAlign = 'left';
+
+            // Track bg
+            ctx.fillStyle = 'rgba(45,42,38,0.03)';
+            roundRect(ctx, chartLeft, y, chartWidth, barHeight, 5, 'rgba(45,42,38,0.03)');
+
+            // Bar
+            var color = cacheColors[step.cache];
+            roundRect(ctx, chartLeft + targetLeft, y, Math.max(2, currentWidth), barHeight, 5, color);
+
+            // Bar inner text
+            if(currentWidth > 60){
+                ctx.font = '700 9px Red Hat Display, sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.fillText(step.pod + ' | ' + step.ms + 'ms', chartLeft + targetLeft + 8, y + barHeight/2 + 3);
+            }
+
+            // Cache tag
+            if(stepProgress > 0.7){
+                var tagX = chartLeft + targetLeft + currentWidth + 8;
+                ctx.font = '700 8px Red Hat Display, sans-serif';
+                ctx.fillStyle = color;
+                ctx.fillText(cacheLabels[step.cache], tagX, y + barHeight/2 + 3);
+            }
+        });
+
+        // Sparkle particles along active bars
+        for(var i = 0; i < sparkles.length; i++){
+            var sp = sparkles[i];
+            sp.offset += sp.speed;
+            if(sp.offset > 1) sp.offset = 0;
+            var step = steps[sp.stepIdx];
+            var stepProg = Math.max(0, Math.min(1, (traceAnimProgress - sp.stepIdx * 0.08) / 0.5));
+            if(stepProg < 0.5) continue;
+
+            var y = startY + sp.stepIdx * (barHeight + barGap) + barHeight/2;
+            var targetLeft = (step.start / totalMs) * chartWidth;
+            var targetWidth = (step.ms / totalMs) * chartWidth * stepProg;
+            var x = chartLeft + targetLeft + sp.offset * targetWidth;
+
+            ctx.beginPath();
+            ctx.arc(x, y, sp.size * 2, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,' + (sp.alpha * 0.4) + ')';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x, y, sp.size, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,' + sp.alpha + ')';
+            ctx.fill();
+        }
+
+        if(!document.hidden) safeRAF(draw);
     }
-  }
+    safeRAF(draw);
+})();
 
-  // Mark some as cached
-  pods[2].cache = 92;
-  pods[5].cache = 88;
+/* ============================================================
+   SLIDE 5: PERFORMANCE BACKGROUND -- Subtle floating particles
+   ============================================================ */
+(function perfBgCanvas(){
+    var canvas = document.getElementById('canvas-perf-bg');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
 
-  var agents = [
-    { name: 'Research', color: '#3a7bd5', targetPod: 2 },
-    { name: 'Code', color: '#2d9d5a', targetPod: 5 },
-    { name: 'Review', color: '#7c5cbf', targetPod: 5 }
-  ];
+    var particles = [];
+    for(var i = 0; i < 30; i++){
+        particles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 1.5 + Math.random() * 3,
+            speedX: (Math.random() - 0.5) * 0.08,
+            speedY: (Math.random() - 0.5) * 0.05,
+            color: ['rgba(245,115,108,','rgba(16,185,129,','rgba(59,130,246,'][Math.floor(Math.random()*3)],
+            alpha: 0.05 + Math.random() * 0.1
+        });
+    }
 
-  function draw(time) {
-    ctx.clearRect(0, 0, w, h);
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if(p.x < -10) p.x = W + 10;
+            if(p.x > W + 10) p.x = -10;
+            if(p.y < -10) p.y = H + 10;
+            if(p.y > H + 10) p.y = -10;
 
-    // Title
-    ctx.font = '700 11px "Red Hat Display", sans-serif';
-    ctx.fillStyle = '#2d2a26';
-    ctx.textAlign = 'center';
-    ctx.fillText('Live Cluster State -- 8 vLLM Pods', w / 2, 16);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.25) + ')';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+        }
 
-    // Agent labels at top
-    var agentY = 30;
-    agents.forEach(function(agent, i) {
-      var ax = 40 + i * 140;
-      ctx.fillStyle = agent.color;
-      ctx.font = '700 10px "Red Hat Display", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(agent.name + ' Agent', ax, agentY + 10);
+        for(var i = 0; i < particles.length; i++){
+            for(var j = i+1; j < particles.length; j++){
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 120){
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(59,130,246,' + (0.06 * (1 - dist/120)) + ')';
+                    ctx.lineWidth = 0.6;
+                    ctx.stroke();
+                }
+            }
+        }
 
-      // Animated line to target pod
-      var pod = pods[agent.targetPod];
-      var podCx = pod.x + podW / 2;
-      var podCy = pod.y;
-      var agentCx = ax + 40;
-      var agentCy = agentY + 16;
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
+})();
 
-      ctx.beginPath();
-      ctx.moveTo(agentCx, agentCy);
-      ctx.lineTo(podCx, podCy);
-      ctx.strokeStyle = agent.color + '40';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+/* ============================================================
+   SLIDE 5: PERFORMANCE CANVAS -- Animated comparison bar chart
+   ============================================================ */
+var perfAnimProgress = 0;
+(function perfCanvas(){
+    var canvas = document.getElementById('canvas-perf');
+    if(!canvas) return;
+    var W, H, ctx;
 
-      // Animated dot
-      var t = ((time * 0.8 + i * 0.7) % 2) / 2;
-      if (t < 1) {
-        var dx = agentCx + (podCx - agentCx) * t;
-        var dy = agentCy + (podCy - agentCy) * t;
+    function resize(){
+        var rect = canvas.parentElement.getBoundingClientRect();
+        W = rect.width;
+        H = rect.height || 300;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var labels = ['Parse', 'Reason', 'Tools', 'Search', 'Analyze', 'Exec', 'Response'];
+    var random = [350, 420, 380, 450, 390, 470, 360];
+    var cached = [350, 180, 120, 450, 110, 130, 100];
+    var maxY = 500;
+
+    // Bar sparkle particles
+    var barSparkles = [];
+    for(var i = 0; i < 20; i++){
+        barSparkles.push({
+            barIdx: Math.floor(Math.random() * labels.length),
+            yPos: Math.random(),
+            size: 1 + Math.random() * 1.5,
+            alpha: 0.3 + Math.random() * 0.5,
+            speed: 0.005 + Math.random() * 0.01
+        });
+    }
+
+    function draw(){
+        perfAnimProgress = Math.min(1, perfAnimProgress + 0.004);
+        var t = easeOutCubic(perfAnimProgress);
+        resize();
+        ctx.clearRect(0,0,W,H);
+
+        var pad = {top:30, right:25, bottom:50, left:55};
+        var cw = W - pad.left - pad.right;
+        var ch = H - pad.top - pad.bottom;
+
+        // Grid
+        ctx.strokeStyle = 'rgba(212,207,201,0.4)';
+        ctx.lineWidth = 1;
+        for(var v = 0; v <= 5; v++){
+            var val = v * 100;
+            var y = pad.top + ch - (val/maxY)*ch;
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(pad.left+cw, y);
+            ctx.stroke();
+            ctx.fillStyle = '#a09a94';
+            ctx.font = '400 10px Red Hat Text, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(val+'ms', pad.left-8, y+4);
+        }
+
+        // Y axis label
+        ctx.save();
+        ctx.translate(12, pad.top+ch/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.fillStyle = '#6b6560';
+        ctx.font = '500 10px Red Hat Text, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('TTFT per Step (ms)', 0, 0);
+        ctx.restore();
+
+        // Bars
+        var groupW = cw / labels.length;
+        var barW = groupW * 0.3;
+        var barGap = groupW * 0.05;
+
+        labels.forEach(function(l, i){
+            var gx = pad.left + i * groupW + groupW * 0.15;
+
+            // Random routing bar
+            var randH = (random[i]/maxY)*ch * t;
+            var randY = pad.top + ch - randH;
+            var grad1 = ctx.createLinearGradient(gx, randY, gx, pad.top+ch);
+            grad1.addColorStop(0, '#f5736c');
+            grad1.addColorStop(1, 'rgba(245,115,108,0.4)');
+            ctx.fillStyle = grad1;
+            drawRoundBar(ctx, gx, randY, barW, randH, 4);
+
+            // Cached routing bar
+            var cx = gx + barW + barGap;
+            var cachedH = (cached[i]/maxY)*ch * t;
+            var cachedY = pad.top + ch - cachedH;
+            var grad2 = ctx.createLinearGradient(cx, cachedY, cx, pad.top+ch);
+            grad2.addColorStop(0, '#10b981');
+            grad2.addColorStop(1, 'rgba(16,185,129,0.4)');
+            ctx.fillStyle = grad2;
+            drawRoundBar(ctx, cx, cachedY, barW, cachedH, 4);
+
+            // Speedup annotation
+            if(t > 0.7 && random[i] !== cached[i]){
+                var speedup = Math.round((1 - cached[i]/random[i]) * 100) + '%';
+                var annoAlpha = (t - 0.7)/0.3;
+                ctx.fillStyle = 'rgba(124,58,237,' + annoAlpha + ')';
+                ctx.font = '700 9px Red Hat Display, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(speedup, gx + barW + barGap/2, Math.min(randY, cachedY) - 8);
+            }
+
+            // X label
+            ctx.fillStyle = '#6b6560';
+            ctx.font = '400 10px Red Hat Text, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(l, gx + barW + barGap/2, H - pad.bottom + 16);
+        });
+
+        // Bar sparkle particles
+        for(var i = 0; i < barSparkles.length; i++){
+            var sp = barSparkles[i];
+            sp.yPos += sp.speed;
+            if(sp.yPos > 1) sp.yPos = 0;
+            if(t < 0.5) continue;
+
+            var bi = sp.barIdx;
+            var cx = pad.left + bi * groupW + groupW * 0.15 + barW + barGap;
+            var cachedH2 = (cached[bi]/maxY)*ch * t;
+            var cachedY2 = pad.top + ch - cachedH2;
+            var spY = cachedY2 + sp.yPos * cachedH2;
+
+            ctx.beginPath();
+            ctx.arc(cx + barW/2, spY, sp.size * 2, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,' + (sp.alpha * 0.3) + ')';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + barW/2, spY, sp.size, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,' + sp.alpha + ')';
+            ctx.fill();
+        }
+
+        // Legend
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#f5736c';
+        ctx.fillRect(pad.left, 8, 14, 8);
+        ctx.fillStyle = '#2d2a26';
+        ctx.font = '500 10px Red Hat Text, sans-serif';
+        ctx.fillText('Random Routing', pad.left+20, 15);
+
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(pad.left+130, 8, 14, 8);
+        ctx.fillStyle = '#2d2a26';
+        ctx.fillText('llm-d EPP (Cache-Aware)', pad.left+150, 15);
+
+        if(!document.hidden) safeRAF(draw);
+    }
+
+    function drawRoundBar(ctx, x, y, w, h, r){
+        if(h < 1) return;
+        if(h < r*2) r = h/2;
         ctx.beginPath();
-        ctx.arc(dx, dy, 4, 0, Math.PI * 2);
-        ctx.fillStyle = agent.color;
+        ctx.moveTo(x+r, y);
+        ctx.lineTo(x+w-r, y);
+        ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h);
+        ctx.lineTo(x, y+h);
+        ctx.lineTo(x, y+r);
+        ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
         ctx.fill();
-      }
-    });
+    }
 
-    // Pods
-    pods.forEach(function(pod, i) {
-      var isTarget = agents.some(function(a) { return a.targetPod === i; });
-      var cacheHigh = pod.cache > 70;
+    safeRAF(draw);
+})();
 
-      ctx.fillStyle = isTarget ? (cacheHigh ? '#e0f5ea' : '#fef3dc') : '#ffffff';
-      roundRect(ctx, pod.x, pod.y, podW, podH, 8);
-      ctx.fill();
-      ctx.strokeStyle = isTarget ? (cacheHigh ? 'rgba(45,157,90,0.5)' : 'rgba(232,146,13,0.4)') : 'rgba(45,42,38,0.08)';
-      ctx.lineWidth = isTarget ? 2 : 1;
-      roundRect(ctx, pod.x, pod.y, podW, podH, 8);
-      ctx.stroke();
+/* ============================================================
+   SLIDE 6: MULTI-AGENT BACKGROUND -- Flowing network particles
+   ============================================================ */
+(function multiBgCanvas(){
+    var canvas = document.getElementById('canvas-multi-bg');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
 
-      // Pod name
-      ctx.font = '600 9px "Red Hat Text", sans-serif';
-      ctx.fillStyle = '#6b6560';
-      ctx.textAlign = 'center';
-      ctx.fillText('pod-' + i, pod.x + podW / 2, pod.y + 16);
+    var particles = [];
+    for(var i = 0; i < 40; i++){
+        particles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 1.5 + Math.random() * 3,
+            speedX: (Math.random() - 0.5) * 0.1,
+            speedY: (Math.random() - 0.5) * 0.07,
+            color: ['rgba(59,130,246,','rgba(16,185,129,','rgba(124,58,237,','rgba(245,158,11,'][Math.floor(Math.random()*4)],
+            alpha: 0.06 + Math.random() * 0.12,
+            pulse: Math.random() * Math.PI * 2
+        });
+    }
 
-      // Cache %
-      ctx.font = '700 11px "Red Hat Display", sans-serif';
-      ctx.fillStyle = cacheHigh ? '#2d9d5a' : '#e8920d';
-      ctx.fillText(pod.cache + '%', pod.x + podW / 2, pod.y + 32);
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.pulse += 0.007;
+            if(p.x < -10) p.x = W + 10;
+            if(p.x > W + 10) p.x = -10;
+            if(p.y < -10) p.y = H + 10;
+            if(p.y > H + 10) p.y = -10;
 
-      // Queue
-      ctx.font = '400 8px "Red Hat Text", sans-serif';
-      ctx.fillStyle = '#9a9490';
-      ctx.fillText('q:' + pod.queue, pod.x + podW / 2, pod.y + 44);
+            var pf = 1 + Math.sin(p.pulse) * 0.25;
 
-      // Glow for active targets
-      if (isTarget) {
-        var glow = 0.06 + Math.sin(time * 2 + i) * 0.03;
-        ctx.beginPath();
-        ctx.arc(pod.x + podW / 2, pod.y + podH / 2, 40, 0, Math.PI * 2);
-        ctx.fillStyle = cacheHigh ? 'rgba(45,157,90,' + glow + ')' : 'rgba(232,146,13,' + glow + ')';
-        ctx.fill();
-      }
-    });
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3.5 * pf, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.2) + ')';
+            ctx.fill();
 
-    ctx.textAlign = 'left';
-  }
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * pf, 0, Math.PI*2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+        }
 
-  function animate() {
-    multiAnimTime += 0.016;
-    draw(multiAnimTime);
-    multiAnimFrame = requestAnimationFrame(animate);
-  }
+        for(var i = 0; i < particles.length; i++){
+            for(var j = i+1; j < particles.length; j++){
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 150){
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(124,58,237,' + (0.08 * (1 - dist/150)) + ')';
+                    ctx.lineWidth = 0.7;
+                    ctx.stroke();
+                }
+            }
+        }
 
-  if (multiAnimFrame) cancelAnimationFrame(multiAnimFrame);
-  animate();
-}
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
+})();
 
+/* ============================================================
+   SLIDE 6: MULTI-AGENT CANVAS -- Interactive pod cluster
+   ============================================================ */
+(function multiCanvas(){
+    var canvas = document.getElementById('canvas-multi');
+    if(!canvas) return;
+    var W, H, ctx;
+    var animTime = 0;
 
-// ── Slide 5: Comparison Bars ────────────────────────────────────
+    function resize(){
+        var rect = canvas.parentElement.getBoundingClientRect();
+        W = rect.width;
+        H = rect.height || 340;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
 
-function populateComparisonBars() {
-  var withoutSteps = [
-    { name: 'Parse', ms: 350 }, { name: 'Reason', ms: 420 }, { name: 'Tools', ms: 380 },
-    { name: 'Search', ms: 450 }, { name: 'Analyze', ms: 390 }, { name: 'Synth', ms: 470 }, { name: 'Response', ms: 360 }
-  ];
-  var withSteps = [
-    { name: 'Parse', ms: 350 }, { name: 'Reason', ms: 180 }, { name: 'Tools', ms: 120 },
-    { name: 'Search', ms: 450 }, { name: 'Analyze', ms: 110 }, { name: 'Synth', ms: 130 }, { name: 'Response', ms: 100 }
-  ];
+    var agents = [
+        { name: 'Research Agent', color: '#3b82f6', targetPods: [2,5], x: 0, y: 0 },
+        { name: 'Code Agent', color: '#10b981', targetPods: [5,6], x: 0, y: 0 },
+        { name: 'Review Agent (MCP)', color: '#7c3aed', targetPods: [2], x: 0, y: 0 }
+    ];
 
-  var maxMs = 500;
+    var pods = [];
+    for(var i = 0; i < 8; i++){
+        pods.push({
+            x: 0, y: 0,
+            cache: [25, 15, 92, 30, 18, 88, 85, 22][i],
+            queue: [2, 4, 1, 3, 5, 0, 1, 4][i]
+        });
+    }
 
-  var withoutHtml = '';
-  withSteps.forEach(function(s, i) {
-    var pct = Math.min(100, (withoutSteps[i].ms / maxMs) * 100);
-    withoutHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-      '<span style="width:60px;font-size:0.72rem;color:#6b6560;text-align:right;flex-shrink:0;">' + s.name + '</span>' +
-      '<div style="flex:1;height:16px;background:rgba(224,96,80,0.1);border-radius:4px;overflow:hidden;">' +
-        '<div style="height:100%;width:' + pct + '%;background:#e06050;border-radius:4px;transition:width 1.5s ease;"></div>' +
-      '</div>' +
-      '<span style="width:45px;font-size:0.72rem;font-weight:700;color:#e06050;">' + withoutSteps[i].ms + '</span>' +
-    '</div>';
-  });
+    // Animated data packets
+    var packets = [];
+    for(var i = 0; i < 15; i++){
+        packets.push({
+            agentIdx: Math.floor(Math.random() * 3),
+            t: Math.random(),
+            speed: 0.002 + Math.random() * 0.003,
+            size: 2 + Math.random() * 2.5
+        });
+    }
 
-  var withHtml = '';
-  withSteps.forEach(function(s) {
-    var pct = Math.min(100, (s.ms / maxMs) * 100);
-    var color = s.ms > 300 ? '#7c5cbf' : '#2d9d5a';
-    withHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-      '<span style="width:60px;font-size:0.72rem;color:#6b6560;text-align:right;flex-shrink:0;">' + s.name + '</span>' +
-      '<div style="flex:1;height:16px;background:rgba(45,157,90,0.08);border-radius:4px;overflow:hidden;">' +
-        '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px;transition:width 1.5s ease;"></div>' +
-      '</div>' +
-      '<span style="width:45px;font-size:0.72rem;font-weight:700;color:' + color + ';">' + s.ms + '</span>' +
-    '</div>';
-  });
+    function draw(){
+        animTime += 0.016;
+        resize();
+        ctx.clearRect(0,0,W,H);
 
-  var withoutEl = document.getElementById('cmpWithoutBars');
-  var withEl = document.getElementById('cmpWithBars');
-  if (withoutEl) withoutEl.innerHTML = withoutHtml;
-  if (withEl) withEl.innerHTML = withHtml;
-}
+        // Layout
+        var eppX = W/2 - 50, eppY = H/2 - 20, eppW = 100, eppH = 40;
 
+        // Agent positions (top)
+        var agentW = 110, agentH = 36;
+        var agentStartX = (W - agents.length * (agentW + 30) + 30) / 2;
+        agents.forEach(function(a, i){
+            a.x = agentStartX + i * (agentW + 30);
+            a.y = 20;
+        });
 
-// ── Rounded Rectangle Helper ────────────────────────────────────
+        // Pod positions (bottom two rows)
+        var podW = 70, podH = 42;
+        var podGap = 14;
+        var podsPerRow = 4;
+        var podTotalW = podsPerRow * (podW + podGap) - podGap;
+        var podStartX = (W - podTotalW) / 2;
+        pods.forEach(function(p, i){
+            var row = Math.floor(i / podsPerRow);
+            var col = i % podsPerRow;
+            p.x = podStartX + col * (podW + podGap);
+            p.y = H - 60 - (1 - row) * (podH + podGap);
+        });
 
-function roundRect(ctx, x, y, width, height, radius) {
-  if (width < 2 * radius) radius = width / 2;
-  if (height < 2 * radius) radius = height / 2;
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + width, y, x + width, y + height, radius);
-  ctx.arcTo(x + width, y + height, x, y + height, radius);
-  ctx.arcTo(x, y + height, x, y, radius);
-  ctx.arcTo(x, y, x + width, y, radius);
-  ctx.closePath();
-}
+        // Draw connections: agents -> EPP
+        agents.forEach(function(a){
+            ctx.beginPath();
+            ctx.moveTo(a.x + agentW/2, a.y + agentH);
+            ctx.lineTo(eppX + eppW/2, eppY);
+            ctx.strokeStyle = a.color + '25';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        });
 
+        // Draw connections: EPP -> pods
+        pods.forEach(function(p, i){
+            var isTarget = agents.some(function(a){ return a.targetPods.indexOf(i) >= 0; });
+            ctx.beginPath();
+            ctx.moveTo(eppX + eppW/2, eppY + eppH);
+            ctx.lineTo(p.x + podW/2, p.y);
+            ctx.strokeStyle = isTarget ? 'rgba(16,185,129,0.25)' : 'rgba(45,42,38,0.05)';
+            ctx.lineWidth = isTarget ? 2 : 1;
+            ctx.stroke();
+        });
 
-// ── Trigger Animations Per Slide ────────────────────────────────
+        // Animated packets
+        packets.forEach(function(pkt){
+            pkt.t += pkt.speed;
+            if(pkt.t > 1) { pkt.t = 0; pkt.agentIdx = Math.floor(Math.random() * 3); }
 
-function triggerSlideAnimations(slideIndex) {
-  switch (slideIndex) {
-    case 1:
-      animateProblemCanvas();
-      break;
-    case 2:
-      animateRoutingCanvas();
-      break;
-    case 3:
-      animateTraceCanvas();
-      break;
-    case 4:
-      populateComparisonBars();
-      break;
-    case 5:
-      animateMultiAgentCanvas();
-      break;
-  }
+            var agent = agents[pkt.agentIdx];
+            var targetPodIdx = agent.targetPods[0];
+            var pod = pods[targetPodIdx];
 
-  // Animate bar fills on active slide
-  var activeSlide = document.querySelector('.slide[data-slide="' + slideIndex + '"]');
-  if (activeSlide) {
-    var bars = activeSlide.querySelectorAll('.bar-fill');
-    bars.forEach(function(bar) {
-      var targetWidth = bar.getAttribute('data-width');
-      if (targetWidth) {
-        bar.style.width = targetWidth;
-      }
-    });
-  }
-}
+            var px, py;
+            if(pkt.t < 0.4){
+                // Agent to EPP
+                var localT = pkt.t / 0.4;
+                px = lerp(agent.x + agentW/2, eppX + eppW/2, localT);
+                py = lerp(agent.y + agentH, eppY, localT);
+            } else {
+                // EPP to pod
+                var localT = (pkt.t - 0.4) / 0.6;
+                px = lerp(eppX + eppW/2, pod.x + podW/2, localT);
+                py = lerp(eppY + eppH, pod.y, localT);
+            }
 
-// ── Resize handler ──────────────────────────────────────────────
+            var alpha = Math.sin(pkt.t * Math.PI);
 
-var resizeTimer;
-window.addEventListener('resize', function() {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(function() {
-    triggerSlideAnimations(currentSlide);
-  }, 250);
-});
+            // Glow
+            ctx.beginPath();
+            ctx.arc(px, py, pkt.size * 2.5, 0, Math.PI*2);
+            ctx.fillStyle = agent.color + '20';
+            ctx.fill();
 
-// ── Boot ────────────────────────────────────────────────────────
+            // Core
+            ctx.beginPath();
+            ctx.arc(px, py, pkt.size, 0, Math.PI*2);
+            ctx.fillStyle = agent.color;
+            ctx.globalAlpha = alpha * 0.8;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        });
 
-// Start with slide 0 animations
-triggerSlideAnimations(0);
+        // Draw agent boxes
+        agents.forEach(function(a){
+            roundRect(ctx, a.x, a.y, agentW, agentH, 8, a.color + '12', a.color + '50');
+            ctx.fillStyle = '#2d2a26';
+            ctx.font = '700 10px Red Hat Display, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(a.name, a.x + agentW/2, a.y + agentH/2 + 4);
+        });
 
-// Preload comparison data
-populateComparisonBars();
+        // Draw EPP box
+        roundRect(ctx, eppX, eppY, eppW, eppH, 10, 'rgba(245,158,11,0.08)', '#f59e0b');
+        ctx.fillStyle = '#2d2a26';
+        ctx.font = '700 11px Red Hat Display, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('EPP', eppX + eppW/2, eppY + eppH/2 - 4);
+        ctx.fillStyle = '#a09a94';
+        ctx.font = '400 8px Red Hat Text, sans-serif';
+        ctx.fillText('Cache Scorer', eppX + eppW/2, eppY + eppH/2 + 8);
 
+        // Draw pods
+        pods.forEach(function(p, i){
+            var isTarget = agents.some(function(a){ return a.targetPods.indexOf(i) >= 0; });
+            var cacheHigh = p.cache > 70;
+
+            // Glow for active pods
+            if(isTarget){
+                var glowAlpha = 0.06 + Math.sin(animTime * 2 + i) * 0.03;
+                ctx.beginPath();
+                ctx.arc(p.x + podW/2, p.y + podH/2, 45, 0, Math.PI*2);
+                ctx.fillStyle = cacheHigh ? 'rgba(16,185,129,' + glowAlpha + ')' : 'rgba(245,158,11,' + glowAlpha + ')';
+                ctx.fill();
+            }
+
+            roundRect(ctx, p.x, p.y, podW, podH, 8,
+                isTarget ? (cacheHigh ? '#e0f5ea' : '#fef6ee') : '#ffffff',
+                isTarget ? (cacheHigh ? 'rgba(16,185,129,0.5)' : 'rgba(245,158,11,0.4)') : 'rgba(45,42,38,0.08)');
+
+            ctx.font = '600 9px Red Hat Text, sans-serif';
+            ctx.fillStyle = '#6b6560';
+            ctx.textAlign = 'center';
+            ctx.fillText('pod-' + i, p.x + podW/2, p.y + 14);
+
+            ctx.font = '700 11px Red Hat Display, sans-serif';
+            ctx.fillStyle = cacheHigh ? '#10b981' : '#a09a94';
+            ctx.fillText(p.cache + '%', p.x + podW/2, p.y + 28);
+
+            ctx.font = '400 8px Red Hat Text, sans-serif';
+            ctx.fillStyle = '#a09a94';
+            ctx.fillText('q:' + p.queue, p.x + podW/2, p.y + 38);
+
+            // Micro utilization bar
+            var barW = podW - 16;
+            var util = p.cache / 100 + Math.sin(animTime * 1.5 + i) * 0.03;
+            ctx.fillStyle = 'rgba(45,42,38,0.06)';
+            ctx.fillRect(p.x + 8, p.y + podH - 6, barW, 3);
+            ctx.fillStyle = cacheHigh ? '#10b981' : 'rgba(160,154,148,0.3)';
+            ctx.fillRect(p.x + 8, p.y + podH - 6, barW * Math.min(1, util), 3);
+        });
+
+        ctx.textAlign = 'left';
+
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
+})();
+
+/* ============================================================
+   SLIDE 7: COST BACKGROUND -- Green savings particles
+   ============================================================ */
+(function costBgCanvas(){
+    var canvas = document.getElementById('canvas-cost-bg');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var particles = [];
+    for(var i = 0; i < 35; i++){
+        particles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 1.5 + Math.random() * 3,
+            speedX: (Math.random() - 0.5) * 0.1,
+            speedY: 0.02 + Math.random() * 0.08,
+            color: Math.random() > 0.3 ? 'rgba(16,185,129,' : 'rgba(245,158,11,',
+            alpha: 0.06 + Math.random() * 0.12,
+            pulse: Math.random() * Math.PI * 2
+        });
+    }
+
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.x += p.speedX;
+            p.y -= p.speedY;
+            p.pulse += 0.008;
+            if(p.y < -20) { p.y = H + 20; p.x = Math.random() * W; }
+            if(p.x < -10) p.x = W + 10;
+            if(p.x > W + 10) p.x = -10;
+
+            var pf = 1 + Math.sin(p.pulse) * 0.2;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3 * pf, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.2) + ')';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * pf, 0, Math.PI*2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+        }
+
+        for(var i = 0; i < particles.length; i++){
+            for(var j = i+1; j < particles.length; j++){
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 130){
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(16,185,129,' + (0.07 * (1 - dist/130)) + ')';
+                    ctx.lineWidth = 0.6;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
+})();
+
+/* ============================================================
+   SLIDE 8: CTA CANVAS -- Celebratory particle burst
+   ============================================================ */
+(function ctaCanvas(){
+    var canvas = document.getElementById('canvas-cta');
+    if(!canvas) return;
+    var W, H, ctx;
+    function resize(){
+        W = window.innerWidth;
+        H = window.innerHeight;
+        ctx = sizeCanvas(canvas, W, H);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var particles = [];
+    var particleCount = 70;
+    var colorPalette = ['rgba(245,158,11,','rgba(245,115,108,','rgba(59,130,246,','rgba(16,185,129,','rgba(124,58,237,'];
+    for(var i = 0; i < particleCount; i++){
+        var angle = Math.random() * Math.PI * 2;
+        var speed = 0.04 + Math.random() * 0.15;
+        particles.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 1200,
+            size: 1.5 + Math.random() * 4.5,
+            speedX: Math.cos(angle) * speed,
+            speedY: Math.sin(angle) * speed,
+            color: colorPalette[Math.floor(Math.random()*colorPalette.length)],
+            alpha: 0.1 + Math.random() * 0.25,
+            pulse: Math.random() * Math.PI * 2,
+            orbitRadius: 50 + Math.random() * 150,
+            orbitSpeed: 0.001 + Math.random() * 0.003,
+            orbitAngle: Math.random() * Math.PI * 2
+        });
+    }
+
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.orbitAngle += p.orbitSpeed;
+            p.pulse += 0.008;
+
+            // Gentle orbital motion around a center drift
+            p.x += p.speedX + Math.cos(p.orbitAngle) * 0.15;
+            p.y += p.speedY + Math.sin(p.orbitAngle) * 0.15;
+
+            if(p.x < -30) p.x = W + 30;
+            if(p.x > W + 30) p.x = -30;
+            if(p.y < -30) p.y = H + 30;
+            if(p.y > H + 30) p.y = -30;
+
+            var pulseFactor = 1 + Math.sin(p.pulse) * 0.3;
+
+            // Outer glow
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 4 * pulseFactor, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.12) + ')';
+            ctx.fill();
+
+            // Mid glow
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 2 * pulseFactor, 0, Math.PI*2);
+            ctx.fillStyle = p.color + (p.alpha * 0.3) + ')';
+            ctx.fill();
+
+            // Core
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+        }
+
+        // Connection lines
+        for(var i = 0; i < particles.length; i++){
+            for(var j = i+1; j < particles.length; j++){
+                var dx = particles[i].x - particles[j].x;
+                var dy = particles[i].y - particles[j].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 160){
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(212,207,201,' + (0.12 * (1 - dist/160)) + ')';
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        if(!document.hidden) safeRAF(draw);
+    }
+    safeRAF(draw);
+})();
+
+/* ============================================================
+   INITIAL TRIGGER
+   ============================================================ */
+triggerSlideAnimation(0);
+
+})();
 </script>
 </body>
 </html>
