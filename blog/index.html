@@ -997,6 +997,494 @@
         }
 
         /* Responsive */
+        /* TL;DR Box */
+        .tldr-box {
+            margin: 0 0 2rem;
+            padding: 1.75rem 2rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.07));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tldr-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .tldr-box .tldr-label {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--accent-blue);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tldr-box .tldr-label .tldr-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: rgba(59, 130, 246, 0.15);
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+
+        .tldr-box p {
+            font-size: 1.05rem;
+            color: var(--text-primary);
+            line-height: 1.7;
+            margin-bottom: 0;
+            font-weight: 400;
+        }
+
+        .tldr-box p strong {
+            color: var(--text-heading);
+        }
+
+        /* Key Takeaways */
+        .key-takeaways {
+            margin: 0 0 2.5rem;
+            padding: 2rem 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .key-takeaways::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            bottom: 0;
+            background: linear-gradient(180deg, var(--accent-green), var(--accent-cyan));
+            border-radius: 4px 0 0 4px;
+        }
+
+        .key-takeaways .kt-label {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent-green);
+            margin-bottom: 1rem;
+        }
+
+        .key-takeaways ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .key-takeaways ul li {
+            position: relative;
+            padding-left: 1.75rem;
+            margin-bottom: 0.65rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .key-takeaways ul li:last-child {
+            margin-bottom: 0;
+        }
+
+        .key-takeaways ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.55em;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            opacity: 0.7;
+        }
+
+        /* Pattern Comparison Cards */
+        .pattern-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin: 2rem 0 2.5rem;
+        }
+
+        .pattern-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 1.5rem 1.5rem 1.25rem;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .pattern-card:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .pattern-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .pattern-card.card-react::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan)); }
+        .pattern-card.card-tag::before { background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); }
+        .pattern-card.card-multi::before { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+        .pattern-card.card-rag::before { background: linear-gradient(90deg, var(--accent-amber), var(--accent-red)); }
+
+        .pattern-card .pc-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .pattern-card .pc-icon {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+        }
+
+        .pattern-card.card-react .pc-icon {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--accent-blue);
+        }
+
+        .pattern-card.card-tag .pc-icon {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: var(--accent-purple);
+        }
+
+        .pattern-card.card-multi .pc-icon {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: var(--accent-green);
+        }
+
+        .pattern-card.card-rag .pc-icon {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--accent-amber);
+        }
+
+        .pattern-card .pc-name {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            line-height: 1.3;
+        }
+
+        .pattern-card .pc-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin-bottom: 1rem;
+        }
+
+        .pattern-card .pc-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+        }
+
+        .pattern-card .pc-stat {
+            background: rgba(10, 14, 23, 0.6);
+            border-radius: 8px;
+            padding: 0.5rem 0.65rem;
+        }
+
+        .pattern-card .pc-stat-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 0.15rem;
+        }
+
+        .pattern-card .pc-stat-value {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .pattern-card .pc-cache-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent-green);
+            margin-top: 0.75rem;
+            padding-top: 0.65rem;
+            border-top: 1px solid rgba(30, 58, 95, 0.4);
+        }
+
+        /* Decision Tree */
+        .decision-tree {
+            margin: 2rem 0 2.5rem;
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .decision-tree::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+        }
+
+        .decision-tree .dt-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .dt-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            align-items: center;
+        }
+
+        .dt-question {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.08));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 0.85rem 1.5rem;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .dt-question .dt-q-text {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            line-height: 1.4;
+        }
+
+        .dt-branches {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            max-width: 600px;
+            justify-content: center;
+            position: relative;
+        }
+
+        .dt-branch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            flex: 1;
+        }
+
+        .dt-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.35rem 0;
+        }
+
+        .dt-arrow-line {
+            width: 2px;
+            height: 16px;
+            background: rgba(59, 130, 246, 0.4);
+        }
+
+        .dt-arrow-label {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 10px;
+            border-radius: 10px;
+            margin: 4px 0;
+        }
+
+        .dt-arrow-label.yes {
+            color: var(--accent-green);
+            background: rgba(34, 197, 94, 0.12);
+        }
+
+        .dt-arrow-label.no {
+            color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+        .dt-answer {
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        .dt-answer .dt-a-pattern {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .dt-answer .dt-a-desc {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .dt-answer.answer-react {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        .dt-answer.answer-react .dt-a-pattern { color: var(--accent-blue); }
+
+        .dt-answer.answer-tag {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        .dt-answer.answer-tag .dt-a-pattern { color: var(--accent-purple); }
+
+        .dt-answer.answer-multi {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        .dt-answer.answer-multi .dt-a-pattern { color: var(--accent-green); }
+
+        .dt-answer.answer-rag {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .dt-answer.answer-rag .dt-a-pattern { color: var(--accent-amber); }
+
+        /* Further Reading */
+        .further-reading {
+            margin: 3rem 0 2rem;
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .further-reading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .further-reading .fr-label {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent-blue);
+            margin-bottom: 1.25rem;
+        }
+
+        .fr-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .fr-item {
+            background: rgba(10, 14, 23, 0.5);
+            border: 1px solid rgba(30, 58, 95, 0.3);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            text-decoration: none;
+            transition: border-color 0.2s, transform 0.2s;
+            display: block;
+        }
+
+        .fr-item:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .fr-item .fr-item-type {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-cyan);
+            margin-bottom: 0.35rem;
+        }
+
+        .fr-item .fr-item-title {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            line-height: 1.4;
+            margin-bottom: 0.25rem;
+        }
+
+        .fr-item .fr-item-desc {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        /* Section anchor link styles */
+        h2[id] {
+            scroll-margin-top: 80px;
+        }
+
+        h3[id] {
+            scroll-margin-top: 80px;
+        }
+
+        /* Responsive */
         @media (max-width: 640px) {
             h1 { font-size: 1.8rem; }
             h2 { font-size: 1.4rem; }
@@ -1010,6 +1498,11 @@
             .cost-grid { grid-template-columns: 1fr; }
             .hero-stat .stat-content .stat-number { font-size: 1.2rem; }
             .callout { flex-direction: column; gap: 0.5rem; }
+            .pattern-cards { grid-template-columns: 1fr; }
+            .dt-branches { flex-direction: column; gap: 1rem; }
+            .fr-grid { grid-template-columns: 1fr; }
+            .tldr-box { padding: 1.25rem 1.25rem; }
+            .key-takeaways { padding: 1.5rem 1.25rem; }
         }
     </style>
 </head>
@@ -1050,6 +1543,28 @@
             </div>
         </div>
     </header>
+
+    <!-- TL;DR -->
+    <div class="tldr-box">
+        <div class="tldr-label"><span class="tldr-icon">&#9889;</span> TL;DR</div>
+        <p>
+            AI agents make 5 to 30+ LLM calls per user request, and every call after the first recomputes the same system prompt and tool definitions from scratch. <strong>llm-d eliminates this waste</strong> by routing all of an agent's calls to the same GPU pod, where the shared prefix is already cached. The result: <strong>70% less prefill latency</strong>, 2.6 seconds saved per agent execution, and roughly <strong>$4,200/month in GPU savings</strong> for a mid-scale deployment. If you are building agents without cache-aware routing, you are paying for the same computation 7 times per request.
+        </p>
+    </div>
+
+    <!-- Key Takeaways -->
+    <div class="key-takeaways">
+        <div class="kt-label">Key Takeaways</div>
+        <ul>
+            <li><strong>Agentic workloads amplify cold-cache penalties.</strong> A single cache miss adds 400ms; across 8 sequential agent calls, that compounds to 3.2 seconds of pure waste.</li>
+            <li><strong>llm-d's sticky routing keeps agent sessions on the same pod.</strong> After the first cold-start call, all subsequent calls skip prefill for the shared prefix, cutting total prefill time by 70%.</li>
+            <li><strong>Multi-agent platforms benefit from cross-agent cache sharing.</strong> Agents using the same tools share cached prefixes, saving hundreds of tokens of redundant compute per call across all tenants.</li>
+            <li><strong>MCP standardization amplifies cache efficiency.</strong> Standardized tool definitions create predictable, highly cacheable prefix patterns that llm-d exploits across the entire cluster.</li>
+            <li><strong>The EPP balances cache affinity with load awareness.</strong> llm-d does not blindly stick to overloaded pods; it dynamically weighs cache savings against queuing delay for every request.</li>
+            <li><strong>Observability matters as much as performance.</strong> OpenTelemetry integration gives full visibility into agent execution, making it possible to set SLOs on end-to-end latency rather than per-call TTFT.</li>
+            <li><strong>Architecture pattern choice affects cache efficiency.</strong> ReAct loops, TAG, and multi-agent orchestration all benefit from cache-aware routing, but each pattern has different optimization characteristics.</li>
+        </ul>
+    </div>
 
     <!-- Numbers That Matter -->
     <div class="numbers-that-matter">
@@ -1229,7 +1744,10 @@
             <li><a href="#routing-challenges">Agentic Routing Challenges</a></li>
             <li><a href="#observability">Observability for Agents</a></li>
             <li><a href="#architecture-patterns">Agentic Architecture Patterns</a></li>
+            <li><a href="#pattern-comparison">Pattern Comparison at a Glance</a></li>
+            <li><a href="#which-pattern">Which Pattern Should I Use?</a></li>
             <li><a href="#production">Production Patterns for Agentic Inference</a></li>
+            <li><a href="#further-reading">Further Reading</a></li>
         </ol>
     </div>
 
@@ -2228,6 +2746,225 @@ Request 2 (continuation):
         The production pattern is to tag supervisor and worker requests with metadata indicating their relationship (supervisor ID, worker ID, task ID). llm-d's EPP uses this metadata to route workers to pods that handled the supervisor's initial planning call, maximizing prefix sharing. This requires the agent framework to include metadata in the inference request headers, but the routing savings justify the small integration cost.
     </p>
 
+    <!-- Section: Pattern Comparison Cards -->
+    <h2 id="pattern-comparison">Pattern Comparison at a Glance</h2>
+
+    <p>
+        The four agentic architecture patterns described above each have distinct characteristics when it comes to LLM call volume, cache behavior, and how much they benefit from llm-d's routing. The cards below summarize these differences side by side to help you evaluate which patterns best fit your workload.
+    </p>
+
+    <div class="pattern-cards">
+        <div class="pattern-card card-react">
+            <div class="pc-header">
+                <div class="pc-icon">&#8635;</div>
+                <div class="pc-name">ReAct Loop</div>
+            </div>
+            <div class="pc-desc">Alternates between reasoning and tool-calling steps in a sequential loop. The conversation history grows with each iteration, creating increasingly long shared prefixes.</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-label">LLM Calls</div>
+                    <div class="pc-stat-value">3 - 15</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Call Pattern</div>
+                    <div class="pc-stat-value">Sequential</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefix Growth</div>
+                    <div class="pc-stat-value">Linear</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefill Savings</div>
+                    <div class="pc-stat-value">65 - 85%</div>
+                </div>
+            </div>
+            <div class="pc-cache-label">Best for: Iterative research, step-by-step problem solving</div>
+        </div>
+
+        <div class="pattern-card card-tag">
+            <div class="pc-header">
+                <div class="pc-icon">&#9654;</div>
+                <div class="pc-name">Tool-Augmented Generation</div>
+            </div>
+            <div class="pc-desc">Pauses mid-generation to call tools, then resumes from the same context. Creates very short gaps between requests, so the cache is almost always warm.</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-label">LLM Calls</div>
+                    <div class="pc-stat-value">2 - 8</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Call Pattern</div>
+                    <div class="pc-stat-value">Sequential</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefix Growth</div>
+                    <div class="pc-stat-value">Incremental</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefill Savings</div>
+                    <div class="pc-stat-value">90 - 97%</div>
+                </div>
+            </div>
+            <div class="pc-cache-label">Best for: Interactive assistants, real-time data lookups</div>
+        </div>
+
+        <div class="pattern-card card-multi">
+            <div class="pc-header">
+                <div class="pc-icon">&#9733;</div>
+                <div class="pc-name">Multi-Agent Orchestration</div>
+            </div>
+            <div class="pc-desc">A supervisor dispatches subtasks to specialized workers in parallel. Workers share partial prefixes (common tools) and each runs its own sequential call chain.</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-label">LLM Calls</div>
+                    <div class="pc-stat-value">11 - 26+</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Call Pattern</div>
+                    <div class="pc-stat-value">Mixed</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefix Growth</div>
+                    <div class="pc-stat-value">Branching</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefill Savings</div>
+                    <div class="pc-stat-value">50 - 70%</div>
+                </div>
+            </div>
+            <div class="pc-cache-label">Best for: Complex tasks requiring multiple specializations</div>
+        </div>
+
+        <div class="pattern-card card-rag">
+            <div class="pc-header">
+                <div class="pc-icon">&#128269;</div>
+                <div class="pc-name">RAG (Retrieval-Augmented)</div>
+            </div>
+            <div class="pc-desc">Retrieves documents from a knowledge base and includes them in the prompt as context. The system prompt and retrieval instructions form a stable, cacheable prefix.</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-label">LLM Calls</div>
+                    <div class="pc-stat-value">1 - 3</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Call Pattern</div>
+                    <div class="pc-stat-value">Sequential</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefix Growth</div>
+                    <div class="pc-stat-value">Fixed</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-label">Prefill Savings</div>
+                    <div class="pc-stat-value">30 - 50%</div>
+                </div>
+            </div>
+            <div class="pc-cache-label">Best for: Knowledge Q&A, document-grounded answers</div>
+        </div>
+    </div>
+
+    <!-- Section: Which Pattern Should I Use? -->
+    <h2 id="which-pattern">Which Pattern Should I Use?</h2>
+
+    <p>
+        Choosing the right agentic architecture depends on your task complexity, latency requirements, and how your agent interacts with external tools. Use the decision tree below to find the best starting point for your use case.
+    </p>
+
+    <div class="decision-tree">
+        <div class="dt-title">Agentic Pattern Decision Tree</div>
+
+        <div class="dt-flow">
+            <!-- Level 1 -->
+            <div class="dt-question">
+                <div class="dt-q-text">Does your task require calling external tools or APIs?</div>
+            </div>
+
+            <div class="dt-branches">
+                <div class="dt-branch">
+                    <div class="dt-arrow">
+                        <div class="dt-arrow-line"></div>
+                        <div class="dt-arrow-label no">No</div>
+                        <div class="dt-arrow-line"></div>
+                    </div>
+                    <div class="dt-answer answer-rag">
+                        <div class="dt-a-pattern">RAG Pattern</div>
+                        <div class="dt-a-desc">Retrieve relevant documents and include them as context. Low call count, stable prefix caching. Best for knowledge Q&A and search.</div>
+                    </div>
+                </div>
+                <div class="dt-branch">
+                    <div class="dt-arrow">
+                        <div class="dt-arrow-line"></div>
+                        <div class="dt-arrow-label yes">Yes</div>
+                        <div class="dt-arrow-line"></div>
+                    </div>
+                    <!-- Level 2 -->
+                    <div class="dt-question">
+                        <div class="dt-q-text">Does it need multiple specialized sub-agents?</div>
+                    </div>
+
+                    <div class="dt-branches">
+                        <div class="dt-branch">
+                            <div class="dt-arrow">
+                                <div class="dt-arrow-line"></div>
+                                <div class="dt-arrow-label yes">Yes</div>
+                                <div class="dt-arrow-line"></div>
+                            </div>
+                            <div class="dt-answer answer-multi">
+                                <div class="dt-a-pattern">Multi-Agent</div>
+                                <div class="dt-a-desc">Supervisor delegates to worker agents. Best for complex tasks needing research, code, and analysis in parallel.</div>
+                            </div>
+                        </div>
+                        <div class="dt-branch">
+                            <div class="dt-arrow">
+                                <div class="dt-arrow-line"></div>
+                                <div class="dt-arrow-label no">No</div>
+                                <div class="dt-arrow-line"></div>
+                            </div>
+                            <!-- Level 3 -->
+                            <div class="dt-question">
+                                <div class="dt-q-text">Should tool calls interrupt mid-generation?</div>
+                            </div>
+
+                            <div class="dt-branches">
+                                <div class="dt-branch">
+                                    <div class="dt-arrow">
+                                        <div class="dt-arrow-line"></div>
+                                        <div class="dt-arrow-label yes">Yes</div>
+                                        <div class="dt-arrow-line"></div>
+                                    </div>
+                                    <div class="dt-answer answer-tag">
+                                        <div class="dt-a-pattern">TAG Pattern</div>
+                                        <div class="dt-a-desc">Pause generation, call tool, resume. Highest cache hit rates (95%+). Best for interactive, real-time experiences.</div>
+                                    </div>
+                                </div>
+                                <div class="dt-branch">
+                                    <div class="dt-arrow">
+                                        <div class="dt-arrow-line"></div>
+                                        <div class="dt-arrow-label no">No</div>
+                                        <div class="dt-arrow-line"></div>
+                                    </div>
+                                    <div class="dt-answer answer-react">
+                                        <div class="dt-a-pattern">ReAct Loop</div>
+                                        <div class="dt-a-desc">Think, then act, then observe. Iterative and predictable. Best for multi-step reasoning with clear tool boundaries.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="callout callout-success">
+        <div class="callout-icon">&#10003;</div>
+        <div class="callout-content">
+            <p>
+                <strong>These patterns are not mutually exclusive.</strong> Production systems often combine them. A multi-agent orchestrator might use ReAct loops inside each worker agent, or a RAG pipeline might feed into a TAG-style interactive response. llm-d optimizes each pattern individually and benefits compound when patterns are nested.
+            </p>
+        </div>
+    </div>
+
     <!-- Section 9: Production Patterns for Agentic Inference -->
     <h2 id="production">Production Patterns for Agentic Inference</h2>
 
@@ -2305,7 +3042,7 @@ Request 2 (continuation):
     <hr>
 
     <!-- Conclusion -->
-    <h2>Conclusion: The Infrastructure Agentic AI Demands</h2>
+    <h2 id="conclusion">Conclusion: The Infrastructure Agentic AI Demands</h2>
 
     <p>
         Agentic workloads are not a future possibility; they are a present reality. Every major AI platform is shipping agent capabilities, and the inference traffic patterns are shifting from single-shot completions to multi-step, tool-augmented reasoning chains. This shift exposes a fundamental inefficiency in traditional inference routing: the repeated recomputation of shared prefixes across an agent's call chain.
@@ -2349,6 +3086,43 @@ Request 2 (continuation):
             <p>
                 <strong>llm-d</strong> is a CNCF Sandbox project for distributed LLM inference routing. It is open source and designed for production Kubernetes deployments with vLLM backends. Learn more at the <a href="https://github.com/llm-d" target="_blank" rel="noopener">llm-d GitHub organization</a>.
             </p>
+        </div>
+    </div>
+
+    <!-- Further Reading -->
+    <div class="further-reading" id="further-reading">
+        <div class="fr-label">Further Reading</div>
+        <div class="fr-grid">
+            <a href="https://github.com/llm-d" target="_blank" rel="noopener" class="fr-item">
+                <div class="fr-item-type">GitHub</div>
+                <div class="fr-item-title">llm-d GitHub Organization</div>
+                <div class="fr-item-desc">Source code, architecture docs, and deployment guides for the llm-d project.</div>
+            </a>
+            <a href="https://github.com/llm-d/llm-d-routing-epp" target="_blank" rel="noopener" class="fr-item">
+                <div class="fr-item-type">GitHub</div>
+                <div class="fr-item-title">EPP (Endpoint Picker Policy)</div>
+                <div class="fr-item-desc">The routing engine that powers cache-aware and load-aware request distribution.</div>
+            </a>
+            <a href="https://docs.vllm.ai/" target="_blank" rel="noopener" class="fr-item">
+                <div class="fr-item-type">Documentation</div>
+                <div class="fr-item-title">vLLM Documentation</div>
+                <div class="fr-item-desc">The high-throughput LLM serving engine that llm-d routes to. Covers prefix caching and continuous batching.</div>
+            </a>
+            <a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener" class="fr-item">
+                <div class="fr-item-type">Specification</div>
+                <div class="fr-item-title">Model Context Protocol (MCP)</div>
+                <div class="fr-item-desc">The open standard for connecting AI agents to tools and data sources.</div>
+            </a>
+            <a href="https://opentelemetry.io/docs/" target="_blank" rel="noopener" class="fr-item">
+                <div class="fr-item-type">Documentation</div>
+                <div class="fr-item-title">OpenTelemetry</div>
+                <div class="fr-item-desc">The observability framework for distributed tracing, metrics, and logging across agentic systems.</div>
+            </a>
+            <a href="https://www.cncf.io/projects/llm-d/" target="_blank" rel="noopener" class="fr-item">
+                <div class="fr-item-type">CNCF</div>
+                <div class="fr-item-title">llm-d on CNCF Landscape</div>
+                <div class="fr-item-desc">llm-d's CNCF Sandbox listing, governance, and community information.</div>
+            </a>
         </div>
     </div>
 
